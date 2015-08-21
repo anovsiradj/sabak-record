@@ -3,6 +3,13 @@ by: Mayendra Costanov
 initial: 20150818
 =================
 fungsi dasar, intinya bisa 'ngorek2'. susah. #
+20150821
+========
+fungsi dasar ke-2. rekam gambar(2) canvas tiap detik 
+==========
+==========
+Instruksi:
+untuk debug, nama fungsi diawali dengan "_".
 -->
 <!DOCTYPE html>
 <html>
@@ -14,7 +21,7 @@ fungsi dasar, intinya bisa 'ngorek2'. susah. #
 	html,body,* { margin: 0px; padding: 0px; }
 	#wrap { padding: 10px 25px; }
 	#sabak { border: none; }
-	#frm {width: 200px;}
+	#frm {width: 550px;margin-top: 2px;}
 	.info { border: 1px solid #0099ff; padding: 2px 3px; margin-top: 2px; display: inline-block; }
 	.color-palette {border: 1px solid #222;padding: 2px;}
 </style>
@@ -24,12 +31,21 @@ var sabak,
 	p_x,p_y,
 	x,y,
 	is_draw, //mouse:down and/or up
+	is_record,
 	is_frame_busy,
+	frame_length,
+	record_frame = [],
+	timeval,
+	is_record,
 	fps = 10;
 function sabak() {
 	is_draw = false;
 	is_frame_busy = false;
-	p_x,p_y,x,y = 0;
+	p_x = 0;
+	p_y = 0;
+	x = 0;
+	y = 0;
+	is_record = false;
 	sabak = document.getElementById("sabak");
 	sbk = sabak.getContext("2d");
 	sbk.strokeStyle = "#fff";
@@ -67,6 +83,7 @@ function sbk_color(c) {
 function _downup() { document.getElementById("sbk_downup").innerHTML = is_draw ? "Ya" : "Tidak"; }
 function _ordinat() { document.getElementById("sbk_ordinat").innerHTML = "X:,"+x+" Y:"+y; }
 function _p(e) { console.log(e); }
+function _record() { document.getElementById("sbk_record").innerHTML = is_record ? "Ya" : "Tidak"; }
 function _colorpalette() {
 	var e = document.getElementById("sbk_color").getElementsByClassName('color-palette');
 	for (var i = 0; i < e.length; i++) {
@@ -78,14 +95,52 @@ function _colorpalette() {
 
 window.onload = function() {
 	sabak();
-	_colorpalette();
+	_downup();_record();_ordinat();_colorpalette();
 	sabak.addEventListener("mousemove",sbk_move);
 	sabak.addEventListener("mousedown",sbk_down);
 	sabak.addEventListener("mouseup",sbk_false);
 	sabak.addEventListener("mouseout",sbk_false);
 }
 function sabak_frame() {
-	document.getElementById("frm").src = sabak.toDataURL("image/png");
+	if (is_frame_busy === false) {
+		is_frame_busy = true;
+		var img_obj = sabak.toDataURL("image/png");
+		record_frame.push(img_obj);
+		document.getElementById("frm").src = img_obj;
+		is_frame_busy = false;
+	}
+	_p("busy:"+is_frame_busy);
+}
+function sabak_record_start() {
+	is_record = true;
+	_record();
+	var t = 1000/fps;
+	timeval = setInterval(function() { sabak_frame(); },t);
+}
+function sabak_record_stop() {
+	is_record = false;
+	_record();
+	clearInterval(timeval);
+	frame_length = record_frame.length;
+}
+function sabak_playr() {
+	_p("sabak_playr().begin;");
+	var t = 1000/fps;
+	var offst = 0;
+	var playr = document.getElementById("frm");
+	var playrval = setInterval(function() {
+		if (offst < frame_length) {
+			sabak_playr_set_frame(offst);
+			offst++;
+		} else {
+			_p("sabak_playr().end;");
+			clearInterval(playrval);
+		};
+	},t);
+}
+function sabak_playr_set_frame(i) {
+	var playr = document.getElementById("frm");
+	playr.src = record_frame[i];
 }
 </script>
 </head>
@@ -93,10 +148,15 @@ function sabak_frame() {
 
 <div id="wrap">
 	<h1>Sabak Record</h1>
-	<canvas id="sabak" width="900" height="500" background="#222"></canvas>
+	<canvas id="sabak" width="900" height="500" background="#222"></canvas><br/>
+	Rekam: <span class="info">
+		<button onclick="sabak_record_start();">Mulai</button>
+		<button onclick="sabak_record_stop();">Berhenti</button>
+		<button onclick="sabak_playr();">Mainkan</button>
+	</span>
+	Merekam <span class="info" id="sbk_record"></span>
 	Posisi: <span class="info" id="sbk_ordinat"></span>
 	Lukis: <span class="info" id="sbk_downup"></span>
-	Gambar: 
 	Warna: <span class="info" id="sbk_color">
 		<button class="color-palette" data-clr="white"></button>
 		<button class="color-palette" data-clr="yellow"></button>
@@ -106,7 +166,8 @@ function sabak_frame() {
 		<button class="color-palette" data-clr="red"></button>
 	</span>
 	<div>
-		<img src="" id="frm" />
+		Hasil/Rekaman:<br/>
+		<img src="javascript:;" id="frm" />
 	</div>
 </div>
 </body>
