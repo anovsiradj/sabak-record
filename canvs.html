@@ -1,0 +1,113 @@
+<!--
+by: Mayendra Costanov
+initial: 20150818
+=================
+fungsi dasar, intinya bisa 'ngorek2'. susah. #
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<title>Canvs: Sabak Record</title>
+<meta charset='utf-8'/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<style type="text/css">
+	html,body,* { margin: 0px; padding: 0px; }
+	#wrap { padding: 10px 25px; }
+	#sabak { border: none; }
+	#frm {width: 200px;}
+	.info { border: 1px solid #0099ff; padding: 2px 3px; margin-top: 2px; display: inline-block; }
+	.color-palette {border: 1px solid #222;padding: 2px;}
+</style>
+<script type="text/javascript">
+var sabak,
+	sbk,
+	p_x,p_y,
+	x,y,
+	is_draw, //mouse:down and/or up
+	is_frame_busy,
+	fps = 10;
+function sabak() {
+	is_draw = false;
+	is_frame_busy = false;
+	p_x,p_y,x,y = 0;
+	sabak = document.getElementById("sabak");
+	sbk = sabak.getContext("2d");
+	sbk.strokeStyle = "#fff";
+	sbk.lineWidth = 2;
+	sbk.fillStyle = '#222';
+	sbk.fillRect(0, 0, sabak.width, sabak.height);
+}
+function sbk_move(e) {
+	p_x = x;
+	p_y = y;
+	x = e.clientX - sabak.offsetLeft;
+	y = e.clientY - sabak.offsetTop;
+	if (is_draw) {
+		sbk_draw();
+	};
+	_ordinat();
+}
+function sbk_down() {
+	is_draw = true;
+	sbk.beginPath();
+	_downup();
+}
+function sbk_false() { //both mouse:up/out
+	is_draw = false;
+	_downup();
+}
+function sbk_draw() {
+	sbk.moveTo(p_x,p_y);
+	sbk.lineTo(x,y);
+	sbk.stroke();
+}
+function sbk_color(c) {
+	sbk.strokeStyle = c;
+}
+function _downup() { document.getElementById("sbk_downup").innerHTML = is_draw ? "Ya" : "Tidak"; }
+function _ordinat() { document.getElementById("sbk_ordinat").innerHTML = "X:,"+x+" Y:"+y; }
+function _p(e) { console.log(e); }
+function _colorpalette() {
+	var e = document.getElementById("sbk_color").getElementsByClassName('color-palette');
+	for (var i = 0; i < e.length; i++) {
+		e[i].style.backgroundColor = e[i].dataset.clr;
+		e[i].setAttribute("onclick","sbk_color('"+e[i].dataset.clr+"')");
+		e[i].innerHTML = e[i].dataset.clr;
+	};
+}
+
+window.onload = function() {
+	sabak();
+	_colorpalette();
+	sabak.addEventListener("mousemove",sbk_move);
+	sabak.addEventListener("mousedown",sbk_down);
+	sabak.addEventListener("mouseup",sbk_false);
+	sabak.addEventListener("mouseout",sbk_false);
+}
+function sabak_frame() {
+	document.getElementById("frm").src = sabak.toDataURL("image/png");
+}
+</script>
+</head>
+<body>
+
+<div id="wrap">
+	<h1>Sabak Record</h1>
+	<canvas id="sabak" width="900" height="500" background="#222"></canvas>
+	Posisi: <span class="info" id="sbk_ordinat"></span>
+	Lukis: <span class="info" id="sbk_downup"></span>
+	Gambar: 
+	Warna: <span class="info" id="sbk_color">
+		<button class="color-palette" data-clr="white"></button>
+		<button class="color-palette" data-clr="yellow"></button>
+		<button class="color-palette" data-clr="pink"></button>
+		<button class="color-palette" data-clr="#669900"></button>
+		<button class="color-palette" data-clr="#0099ff"></button>
+		<button class="color-palette" data-clr="red"></button>
+	</span>
+	<div>
+		<img src="" id="frm" />
+	</div>
+</div>
+</body>
+</html>
