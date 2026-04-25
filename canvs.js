@@ -1,8 +1,3 @@
-// Sabak - Canvas Whiteboard
-// by: Mayendra Costanov
-// initial: 20150818
-// refactored: separated JS, fixed bugs
-
 var canvas,       // the <canvas> DOM element
     sbk,          // 2d context
     p_x, p_y,     // previous mouse/touch position
@@ -18,19 +13,19 @@ var canvas,       // the <canvas> DOM element
 // ─── Init ────────────────────────────────────────────────────────────────────
 
 function initSabak() {
-    is_draw       = false;
+    is_draw = false;
     is_frame_busy = false;
     p_x = p_y = x = y = 0;
     is_record = false;
 
     canvas = document.getElementById("sabak");
-    sbk    = canvas.getContext("2d");
+    sbk = canvas.getContext("2d");
 
     sbk.strokeStyle = "#fff";
-    sbk.lineWidth   = 2;
-    sbk.lineCap     = "round";
-    sbk.lineJoin    = "round";
-    sbk.fillStyle   = "#222";
+    sbk.lineWidth = 2;
+    sbk.lineCap = "round";
+    sbk.lineJoin = "round";
+    sbk.fillStyle = "#222";
     sbk.fillRect(0, 0, canvas.width, canvas.height);
 }
 
@@ -42,8 +37,8 @@ function initSabak() {
  * is scrolled or the canvas has an offset parent.
  */
 function getPos(e) {
-    var rect   = canvas.getBoundingClientRect();
-    var scaleX = canvas.width  / rect.width;
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
     var scaleY = canvas.height / rect.height;
 
     var clientX, clientY;
@@ -60,7 +55,7 @@ function getPos(e) {
 
     return {
         x: (clientX - rect.left) * scaleX,
-        y: (clientY - rect.top)  * scaleY
+        y: (clientY - rect.top) * scaleY
     };
 }
 
@@ -86,8 +81,8 @@ function sbk_down(e) {
     // Seed previous position so the first segment starts at click point
     p_x = pos.x;
     p_y = pos.y;
-    x   = pos.x;
-    y   = pos.y;
+    x = pos.x;
+    y = pos.y;
     sbk.beginPath();
     sbk.moveTo(x, y);
     updateDownup();
@@ -125,13 +120,13 @@ function updateRecord() {
 
 function initColorPalette() {
     var buttons = document.getElementById("sbk_color")
-                          .getElementsByClassName("color-palette");
+        .getElementsByClassName("color-palette");
     for (var i = 0; i < buttons.length; i++) {
-        (function(btn) {
+        (function (btn) {
             var clr = btn.dataset.clr;
             btn.style.backgroundColor = clr;
             btn.innerHTML = clr;
-            btn.addEventListener("click", function() { sbk_color(clr); });
+            btn.addEventListener("click", function () { sbk_color(clr); });
         })(buttons[i]);
     }
 }
@@ -166,9 +161,9 @@ function sabak_record_stop() {
 
 function sabak_playr() {
     if (!frame_length) return;
-    var t      = 1000 / fps;
-    var offst  = 0;
-    var playrval = setInterval(function() {
+    var t = 1000 / fps;
+    var offst = 0;
+    var playrval = setInterval(function () {
         if (offst < frame_length) {
             document.getElementById("frm").src = record_frame[offst];
             offst++;
@@ -180,7 +175,7 @@ function sabak_playr() {
 
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
 
-window.onload = function() {
+window.onload = function () {
     initSabak();
     updateDownup();
     updateRecord();
@@ -188,14 +183,14 @@ window.onload = function() {
     initColorPalette();
 
     // Mouse events
-    canvas.addEventListener("mousemove",  sbk_move);
-    canvas.addEventListener("mousedown",  sbk_down);
-    canvas.addEventListener("mouseup",    sbk_false);
-    canvas.addEventListener("mouseout",   sbk_false);
+    canvas.addEventListener("mousemove", sbk_move);
+    canvas.addEventListener("mousedown", sbk_down);
+    canvas.addEventListener("mouseup", sbk_false);
+    canvas.addEventListener("mouseout", sbk_false);
 
     // Touch events (mobile support)
-    canvas.addEventListener("touchmove",   sbk_move,  { passive: false });
-    canvas.addEventListener("touchstart",  sbk_down,  { passive: false });
-    canvas.addEventListener("touchend",    sbk_false, { passive: false });
+    canvas.addEventListener("touchmove", sbk_move, { passive: false });
+    canvas.addEventListener("touchstart", sbk_down, { passive: false });
+    canvas.addEventListener("touchend", sbk_false, { passive: false });
     canvas.addEventListener("touchcancel", sbk_false, { passive: false });
 };

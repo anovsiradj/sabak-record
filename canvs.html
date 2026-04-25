@@ -1,47 +1,56 @@
 <!--
-  Sabak Record
-  by: Mayendra Costanov
-  initial: 20150818
-  refactored: separated CSS/JS, fixed bugs
+Sabak Record
+@author anovsiradj (Mayendra Costanov)
+
+@riwayat
+[20150818] fungsi dasar, intinya bisa 'ngorek2'. susah. #
+[20150821] fungsi dasar ke-2. rekam gambar(2) canvas tiap detik 
+[20260426] rombak
+
+panduan
+untuk debug, nama fungsi diawali dengan "_".
 -->
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <title>Canvs: Sabak Record</title>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <link rel="stylesheet" href="canvs.css"/>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="canvs.css" />
 </head>
+
 <body>
 
-<div id="wrap">
-    <h1>Sabak Record</h1>
+    <div id="wrap">
+        <h1>Sabak Record</h1>
 
-    <canvas id="sabak" width="900" height="500"></canvas><br/>
+        <canvas id="sabak" width="900" height="500"></canvas><br />
 
-    Rekam: <span class="info">
-        <button onclick="sabak_record_start();">Mulai</button>
-        <button onclick="sabak_record_stop();">Berhenti</button>
-        <button onclick="sabak_playr();">Mainkan</button>
-    </span>
-    Merekam <span class="info" id="sbk_record"></span>
-    Posisi: <span class="info" id="sbk_ordinat"></span>
-    Lukis: <span class="info" id="sbk_downup"></span>
-    Warna: <span class="info" id="sbk_color">
-        <button class="color-palette" data-clr="white"></button>
-        <button class="color-palette" data-clr="yellow"></button>
-        <button class="color-palette" data-clr="pink"></button>
-        <button class="color-palette" data-clr="#669900"></button>
-        <button class="color-palette" data-clr="#0099ff"></button>
-        <button class="color-palette" data-clr="red"></button>
-    </span>
+        Rekam: <span class="info">
+            <button onclick="sabak_record_start();">Mulai</button>
+            <button onclick="sabak_record_stop();">Berhenti</button>
+            <button onclick="sabak_playr();">Mainkan</button>
+        </span>
+        Merekam <span class="info" id="sbk_record"></span>
+        Posisi: <span class="info" id="sbk_ordinat"></span>
+        Lukis: <span class="info" id="sbk_downup"></span>
+        Warna: <span class="info" id="sbk_color">
+            <button class="color-palette" data-clr="white"></button>
+            <button class="color-palette" data-clr="yellow"></button>
+            <button class="color-palette" data-clr="pink"></button>
+            <button class="color-palette" data-clr="#669900"></button>
+            <button class="color-palette" data-clr="#0099ff"></button>
+            <button class="color-palette" data-clr="red"></button>
+        </span>
 
-    <div>
-        Hasil/Rekaman:<br/>
-        <img src="" id="frm" alt="Rekaman akan muncul di sini"/>
+        <div>
+            Hasil/Rekaman:<br />
+            <img src="" id="frm" alt="Rekaman akan muncul di sini" />
+        </div>
     </div>
-</div>
 
-<script src="canvs.js"></script>
+    <script src="canvs.js"></script>
 </body>
+
 </html>
