@@ -1,20 +1,20 @@
-var canvas,       // the <canvas> DOM element
-    sbk,          // 2d context
-    p_x, p_y,     // previous mouse/touch position
-    x, y,         // current mouse/touch position
-    is_draw,      // true while pointer is held down
+var canvas,           // the <canvas> DOM element
+    sbk,              // 2d context
+    p_x, p_y,         // previous mouse/touch position
+    x, y,             // current mouse/touch position
+    is_draw,          // true while pointer is held down
+    is_eraser = false,// true when eraser mode is active
     is_record,
-    is_frame_busy,
-    frame_length,
+    frame_length = 0,
     record_frame = [],
-    timeval,
-    fps = 10;
+    timeval = null,
+    fps = 10,
+    BG_COLOR = "#222"; // canvas background colour (used by eraser)
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 
 function initSabak() {
     is_draw = false;
-    is_frame_busy = false;
     p_x = p_y = x = y = 0;
     is_record = false;
 
@@ -25,7 +25,7 @@ function initSabak() {
     sbk.lineWidth = 2;
     sbk.lineCap = "round";
     sbk.lineJoin = "round";
-    sbk.fillStyle = "#222";
+    sbk.fillStyle = BG_COLOR;
     sbk.fillRect(0, 0, canvas.width, canvas.height);
 }
 
@@ -88,7 +88,7 @@ function sbk_down(e) {
     updateDownup();
 }
 
-function sbk_false(e) { // mouse up / out / touch end / touch cancel
+function sbk_false() { // mouse up / out / touch end / touch cancel
     is_draw = false;
     updateDownup();
 }
@@ -100,77 +100,177 @@ function sbk_draw() {
 }
 
 function sbk_color(c) {
+    is_eraser = false;
     sbk.strokeStyle = c;
+    sbk.lineWidth = getLineWidth();
+    sbk.globalCompositeOperation = "source-over";
+    updateEraserBtn();
+}
+
+// ─── Eraser ──────────────────────────────────────────────────────────────────
+
+function sbk_eraser_toggle() {
+    is_eraser = !is_eraser;
+    if (is_eraser) {
+        sbk.globalCompositeOperation = "destination-out";
+        sbk.strokeStyle = "rgba(0,0,0,1)";
+        sbk.lineWidth = getLineWidth() * 4; // eraser is wider than pen
+    } else {
+        sbk.globalCompositeOperation = "source-over";
+        sbk.lineWidth = getLineWidth();
+    }
+    updateEraserBtn();
+}
+
+function updateEraserBtn() {
+    var btn = document.getElementById("btn_eraser");
+    if (btn) btn.classList.toggle("active", is_eraser);
+}
+
+// ─── Reset ───────────────────────────────────────────────────────────────────
+
+function sbk_reset() {
+    sbk.globalCompositeOperation = "source-over";
+    sbk.fillStyle = BG_COLOR;
+    sbk.fillRect(0, 0, canvas.width, canvas.height);
+    // Restore pen state
+    is_eraser = false;
+    sbk.strokeStyle = "#fff";
+    sbk.lineWidth = getLineWidth();
+    updateEraserBtn();
+}
+
+// ─── Line width ──────────────────────────────────────────────────────────────
+
+function getLineWidth() {
+    var slider = document.getElementById("line_width");
+    return slider ? parseInt(slider.value, 10) : 2;
+}
+
+function sbk_linewidth_change() {
+    var w = getLineWidth();
+    sbk.lineWidth = is_eraser ? w * 4 : w;
+    document.getElementById("line_width_val").textContent = w + "px";
 }
 
 // ─── UI state display ────────────────────────────────────────────────────────
 
 function updateDownup() {
-    document.getElementById("sbk_downup").innerHTML = is_draw ? "Ya" : "Tidak";
+    var badge = document.getElementById("badge_drawing");
+    if (!badge) return;
+    if (is_draw) {
+        badge.textContent = "Melukis";
+        badge.classList.add("drawing");
+    } else {
+        badge.textContent = "Tidak Melukis";
+        badge.classList.remove("drawing");
+    }
 }
 
 function updateOrdinat() {
-    document.getElementById("sbk_ordinat").innerHTML =
-        "X: " + Math.round(x) + "  Y: " + Math.round(y);
+    var el = document.getElementById("sbk_ordinat");
+    if (el) el.textContent = "X: " + Math.round(x) + "  Y: " + Math.round(y);
 }
 
 function updateRecord() {
-    document.getElementById("sbk_record").innerHTML = is_record ? "Ya" : "Tidak";
+    var badge = document.getElementById("badge_record");
+    if (!badge) return;
+    if (is_record) {
+        badge.textContent = "Merekam…";
+        badge.classList.add("recording");
+    } else {
+        badge.textContent = "Tidak Merekam";
+        badge.classList.remove("recording");
+    }
 }
 
 function initColorPalette() {
     var buttons = document.getElementById("sbk_color")
-        .getElementsByClassName("color-palette");
+        .getElementsByClassName("color-swatch");
+    // activate first swatch by default
+    if (buttons.length > 0) buttons[0].classList.add("active");
     for (var i = 0; i < buttons.length; i++) {
         (function (btn) {
             var clr = btn.dataset.clr;
             btn.style.backgroundColor = clr;
-            btn.innerHTML = clr;
-            btn.addEventListener("click", function () { sbk_color(clr); });
+            btn.addEventListener("click", function () {
+                // deactivate all, activate clicked
+                var all = document.getElementsByClassName("color-swatch");
+                for (var j = 0; j < all.length; j++) all[j].classList.remove("active");
+                btn.classList.add("active");
+                sbk_color(clr);
+            });
         })(buttons[i]);
     }
 }
 
 // ─── Recording ───────────────────────────────────────────────────────────────
 
+var playr_timer = null; // track active playback timer so we can cancel it
+
 function sabak_frame() {
-    if (!is_frame_busy) {
-        is_frame_busy = true;
-        var img_obj = canvas.toDataURL("image/png");
-        record_frame.push(img_obj);
-        document.getElementById("frm").src = img_obj;
-        is_frame_busy = false;
-    }
+    // toDataURL is synchronous — just capture and store, never touch #frm here
+    record_frame.push(canvas.toDataURL("image/png"));
 }
 
 function sabak_record_start() {
-    // Reset previous recording
+    // Stop any active playback first
+    sabak_playr_stop();
+
+    // Reset state
     record_frame = [];
+    frame_length = 0;
+
+    // Hide stale playback preview
+    document.getElementById("playback_wrap").classList.add("d-none");
+    document.getElementById("frm").src = "";
+
     is_record = true;
     updateRecord();
-    var t = 1000 / fps;
-    timeval = setInterval(sabak_frame, t);
+
+    timeval = setInterval(sabak_frame, 1000 / fps);
 }
 
 function sabak_record_stop() {
-    is_record = false;
-    updateRecord();
+    if (!is_record) return; // guard against double-stop
     clearInterval(timeval);
+    timeval = null;
+
+    is_record = false;
     frame_length = record_frame.length;
+    updateRecord();
+
+    if (frame_length > 0) {
+        // Show the last captured frame as a still preview
+        document.getElementById("frm").src = record_frame[frame_length - 1];
+        document.getElementById("playback_wrap").classList.remove("d-none");
+    }
+}
+
+function sabak_playr_stop() {
+    if (playr_timer !== null) {
+        clearInterval(playr_timer);
+        playr_timer = null;
+    }
 }
 
 function sabak_playr() {
     if (!frame_length) return;
-    var t = 1000 / fps;
+
+    // Cancel any already-running playback before starting a new one
+    sabak_playr_stop();
+
     var offst = 0;
-    var playrval = setInterval(function () {
+    var frm = document.getElementById("frm");
+
+    playr_timer = setInterval(function () {
         if (offst < frame_length) {
-            document.getElementById("frm").src = record_frame[offst];
+            frm.src = record_frame[offst];
             offst++;
         } else {
-            clearInterval(playrval);
+            sabak_playr_stop();
         }
-    }, t);
+    }, 1000 / fps);
 }
 
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
@@ -181,6 +281,7 @@ window.onload = function () {
     updateRecord();
     updateOrdinat();
     initColorPalette();
+    sbk_linewidth_change(); // set initial label
 
     // Mouse events
     canvas.addEventListener("mousemove", sbk_move);
