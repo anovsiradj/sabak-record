@@ -1,0 +1,32 @@
+html, body, * {
+	margin: 0;
+	padding: 0;
+}
+
+#wrap {
+	padding: 10px 25px;
+}
+
+#sabak {
+	border: none;
+	display: block;
+	cursor: crosshair;
+}
+
+#frm {
+	width: 550px;
+	margin-top: 2px;
+}
+
+.info {
+	border: 1px solid #0099ff;
+	padding: 2px 3px;
+	margin-top: 2px;
+	display: inline-block;
+}
+
+.color-palette {
+	border: 1px solid #222;
+	padding: 2px;
+	cursor: pointer;
+}
