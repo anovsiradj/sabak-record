@@ -2,7 +2,7 @@
 
 .canvas-wrapper {
     background: #111;
-    line-height: 0; /* remove inline-block gap under canvas */
+    line-height: 0;
 }
 
 #sabak {
@@ -10,7 +10,7 @@
     width: 100%;
     height: auto;
     cursor: crosshair;
-    touch-action: none; /* prevent scroll while drawing on touch */
+    touch-action: none;
 }
 
 /* ── Toolbar ─────────────────────────────────────────────────── */
@@ -35,9 +35,7 @@
     flex-shrink: 0;
 }
 
-.color-swatch:hover {
-    transform: scale(1.2);
-}
+.color-swatch:hover  { transform: scale(1.2); }
 
 .color-swatch.active {
     border-color: #fff;
@@ -53,13 +51,13 @@
     color: #fff;
 }
 
-/* Text input overlay (injected by tools.js) */
+/* Text input overlay */
 #text_input_overlay {
     font-family: sans-serif;
     line-height: 1.4;
 }
 
-/* ── Playback image ──────────────────────────────────────────── */
+/* ── Playback preview ────────────────────────────────────────── */
 
 #frm {
     max-width: 100%;
@@ -69,19 +67,10 @@
 
 /* ── Status badges ───────────────────────────────────────────── */
 
-#badge_drawing {
-    background-color: #333;
-}
-
-#badge_drawing.drawing {
-    background-color: #0d6efd;
-}
-
-#badge_record {
-    background-color: #333;
-}
-
-#badge_record.recording {
+#badge_drawing            { background-color: #333; }
+#badge_drawing.drawing    { background-color: #0d6efd; }
+#badge_record             { background-color: #333; }
+#badge_record.recording   {
     background-color: #dc3545;
     animation: pulse 1s infinite;
 }
@@ -89,4 +78,94 @@
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50%       { opacity: 0.5; }
+}
+
+/* ── Gallery grid ────────────────────────────────────────────── */
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 0.75rem;
+}
+
+.gallery-item {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.15s;
+}
+
+.gallery-item:hover { border-color: #555; }
+
+.gallery-thumb {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #111;
+    overflow: hidden;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gallery-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.15s;
+}
+
+.gallery-thumb:hover img { opacity: 0.85; }
+
+.gallery-video-icon {
+    font-size: 2.5rem;
+    color: #555;
+}
+
+.gallery-footer {
+    padding: 0.3rem 0.5rem 0.1rem;
+    font-size: 0.72rem;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gallery-label { display: inline; }
+
+.gallery-actions {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.3rem 0.5rem 0.4rem;
+}
+
+/* Extra-small button variant */
+.btn-xs {
+    padding: 0.1rem 0.35rem;
+    font-size: 0.72rem;
+    line-height: 1.4;
+    border-radius: 0.25rem;
+}
+
+/* ── Lightbox carousel ───────────────────────────────────────── */
+
+.gallery-lightbox-media {
+    max-height: 75vh;
+    object-fit: contain;
+    background: #000;
+}
+
+#galleryCarousel .carousel-item {
+    background: #000;
+}
+
+#galleryCarousel .carousel-caption {
+    background: rgba(0,0,0,0.55);
+    border-radius: 0.4rem;
+    padding: 0.3rem 0.75rem;
+    bottom: 1.5rem;
 }

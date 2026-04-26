@@ -1,77 +1,126 @@
 // js/record.js
-// Canvas recording and frame-by-frame playback.
+// Coordinator: delegates to record-frame.js or record-stream.js
+// based on state.recordMode. Also owns the inline playback preview.
 
 import { state } from "./state.js";
+import * as frame  from "./record-frame.js";
+import * as stream from "./record-stream.js";
+import { addToGallery } from "./gallery.js";
 
-const fps = 10;
+// ─── Badge ────────────────────────────────────────────────────────────────────
 
-let record_frame = [];
-let frame_length = 0;
-let timeval      = null;
-let playr_timer  = null;
-let is_record    = false;
-
-// ─── Internal ─────────────────────────────────────────────────────────────────
-
-function captureFrame() {
-    record_frame.push(state.canvas.toDataURL("image/png"));
-}
-
-function stopPlayback() {
-    if (playr_timer !== null) {
-        clearInterval(playr_timer);
-        playr_timer = null;
-    }
-}
-
-function updateBadge() {
+function setBadge(active) {
     const badge = document.getElementById("badge_record");
     if (!badge) return;
-    if (is_record) {
-        badge.textContent = "Merekam…";
-        badge.classList.add("recording");
+    badge.textContent = active ? "Merekam…" : "Tidak Merekam";
+    badge.classList.toggle("recording", active);
+}
+
+// ─── Inline preview helpers ───────────────────────────────────────────────────
+
+function showPreview(src, isVideo) {
+    const wrap = document.getElementById("playback_wrap");
+    const frm  = document.getElementById("frm");
+    const vid  = document.getElementById("frm_video");
+    if (!wrap) return;
+
+    if (isVideo) {
+        frm.classList.add("d-none");
+        vid.classList.remove("d-none");
+        vid.src = src;
     } else {
-        badge.textContent = "Tidak Merekam";
-        badge.classList.remove("recording");
+        vid.classList.add("d-none");
+        frm.classList.remove("d-none");
+        frm.src = src;
     }
+    wrap.classList.remove("d-none");
+}
+
+function hidePreview() {
+    const wrap = document.getElementById("playback_wrap");
+    if (wrap) wrap.classList.add("d-none");
+    const frm = document.getElementById("frm");
+    const vid = document.getElementById("frm_video");
+    if (frm) frm.src = "";
+    if (vid) { vid.src = ""; vid.classList.add("d-none"); }
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export function recordStart() {
-    stopPlayback();
-    record_frame = [];
-    frame_length = 0;
-    document.getElementById("playback_wrap").classList.add("d-none");
-    document.getElementById("frm").src = "";
-    is_record = true;
-    updateBadge();
-    timeval = setInterval(captureFrame, 1000 / fps);
+    hidePreview();
+    setBadge(true);
+
+    if (state.recordMode === "stream") {
+        const ok = stream.start();
+        if (!ok) {
+            // Fallback to frame mode silently
+            state.recordMode = "frame";
+            syncModeToggle();
+            frame.start();
+        }
+    } else {
+        frame.start();
+    }
 }
 
 export function recordStop() {
-    if (!is_record) return;
-    clearInterval(timeval);
-    timeval = null;
-    is_record = false;
-    frame_length = record_frame.length;
-    updateBadge();
-    if (frame_length > 0) {
-        document.getElementById("frm").src = record_frame[frame_length - 1];
-        document.getElementById("playback_wrap").classList.remove("d-none");
+    setBadge(false);
+
+    if (state.recordMode === "stream") {
+        stream.stop(function (blob) {
+            const url = URL.createObjectURL(blob);
+            showPreview(url, true);
+        });
+    } else {
+        frame.stop();
+        const last = frame.getLastFrame();
+        if (last) showPreview(last, false);
     }
 }
 
 export function play() {
-    if (!frame_length) return;
-    stopPlayback();
-    let offst = 0;
-    const frm = document.getElementById("frm");
-    playr_timer = setInterval(function () {
-        if (offst < frame_length) {
-            frm.src = record_frame[offst++];
-        } else {
-            stopPlayback();
-        }
-    }, 1000 / fps);
+    if (state.recordMode === "stream") {
+        // Stream result is already in the <video> element after stop
+        const vid = document.getElementById("frm_video");
+        if (vid && vid.src) { vid.currentTime = 0; vid.play(); }
+    } else {
+        const frm = document.getElementById("frm");
+        if (frm) frame.play(frm);
+    }
+}
+
+/** Save current recording to gallery. Called from toolbar button. */
+export function saveRecordingToGallery() {
+    if (state.recordMode === "stream") {
+        const blob = stream.getBlob();
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        addToGallery({ type: "video", src: url, blob: blob, label: "Rekaman" });
+    } else {
+        if (!frame.hasFrames()) return;
+        // Store frames array; gallery will animate them
+        addToGallery({ type: "frames", frames: frame.getFrames(), label: "Rekaman (frame)" });
+    }
+}
+
+/** Sync the mode toggle button to reflect state.recordMode. */
+export function syncModeToggle() {
+    const btn = document.getElementById("btn_record_mode");
+    if (!btn) return;
+    const isStream = state.recordMode === "stream";
+    btn.textContent = isStream ? "Mode: Stream" : "Mode: Frame";
+    btn.title = isStream
+        ? "Aktif: MediaRecorder (WebM). Klik untuk ganti ke Frame."
+        : "Aktif: Frame-by-frame (PNG). Klik untuk ganti ke Stream.";
+}
+
+export function toggleRecordMode() {
+    state.recordMode = state.recordMode === "frame" ? "stream" : "frame";
+    // Warn if stream not supported
+    if (state.recordMode === "stream" && !stream.isSupported()) {
+        alert("Browser ini tidak mendukung MediaRecorder. Tetap menggunakan mode Frame.");
+        state.recordMode = "frame";
+    }
+    syncModeToggle();
 }

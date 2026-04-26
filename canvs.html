@@ -8,6 +8,7 @@
   [20260426] rombak: pisah CSS/JS, perbaiki bug
   [20260426] rombak: Bootstrap 5 dark mode, favicon SVG
   [20260426] rombak: modul JS, undo, shape tools, text tool
+  [20260426] tambah: galeri, MediaRecorder, lightbox
 -->
 <!DOCTYPE html>
 <html lang="id" data-bs-theme="dark">
@@ -20,11 +21,8 @@
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23222'/%3E%3Crect x='6' y='8' width='52' height='36' rx='4' fill='%23111' stroke='%23555' stroke-width='2'/%3E%3Cpath d='M14 36 Q22 18 30 28 Q38 38 46 16' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='20' y='48' width='24' height='6' rx='2' fill='%23888'/%3E%3Crect x='29' y='44' width='6' height='5' rx='1' fill='%23888'/%3E%3C/svg%3E" />
 
-    <!-- Bootstrap 5 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-
     <link rel="stylesheet" href="canvs.css" />
 </head>
 
@@ -85,14 +83,13 @@
             <div class="vr opacity-25"></div>
 
             <!-- Drawing tools -->
-            <div class="d-flex align-items-center gap-1"
-                 role="group" aria-label="Alat gambar">
+            <div class="d-flex align-items-center gap-1" role="group" aria-label="Alat gambar">
                 <button class="btn btn-sm btn-outline-light tool-btn active"
-                        data-tool="pen" title="Pena (P)">
+                        data-tool="pen" title="Pena">
                     <i class="bi bi-pen"></i>
                 </button>
                 <button class="btn btn-sm btn-outline-light tool-btn"
-                        data-tool="eraser" title="Penghapus (E)">
+                        data-tool="eraser" title="Penghapus">
                     <i class="bi bi-eraser"></i>
                 </button>
                 <button class="btn btn-sm btn-outline-light tool-btn"
@@ -115,21 +112,25 @@
 
             <div class="vr opacity-25"></div>
 
-            <!-- Actions -->
-            <button class="btn btn-sm btn-outline-secondary"
-                    onclick="history.go(0)" title="Undo (Ctrl+Z)"
-                    id="btn_undo"
-                    style="display:none">
-                <!-- hidden; Ctrl+Z is the primary UX, button is optional -->
-            </button>
+            <!-- Canvas actions -->
             <button class="btn btn-sm btn-outline-danger"
                     onclick="sbk_reset()" title="Bersihkan kanvas">
                 <i class="bi bi-trash3"></i> Bersihkan
+            </button>
+            <button class="btn btn-sm btn-outline-primary"
+                    onclick="sabak_capture()" title="Simpan tangkapan ke galeri">
+                <i class="bi bi-camera"></i> Tangkap
             </button>
 
             <div class="vr opacity-25"></div>
 
             <!-- Recording -->
+            <button class="btn btn-sm btn-outline-secondary"
+                    id="btn_record_mode"
+                    onclick="sabak_toggle_record_mode()"
+                    title="Ganti mode rekam">
+                Mode: Frame
+            </button>
             <button class="btn btn-sm btn-outline-success"
                     onclick="sabak_record_start()" title="Mulai rekam">
                 <i class="bi bi-record-circle"></i> Rekam
@@ -142,23 +143,90 @@
                     onclick="sabak_playr()" title="Putar rekaman">
                 <i class="bi bi-play-circle"></i> Putar
             </button>
+            <button class="btn btn-sm btn-outline-primary"
+                    onclick="sabak_save_recording()" title="Simpan rekaman ke galeri">
+                <i class="bi bi-collection-play"></i> Simpan
+            </button>
 
         </div><!-- /toolbar -->
 
         <!-- Keyboard hint -->
         <p class="text-secondary small mt-2 mb-0">
-            <kbd>Ctrl</kbd>+<kbd>Z</kbd> untuk undo &nbsp;·&nbsp;
-            Klik kanvas dengan alat <i class="bi bi-fonts"></i> untuk menambah teks
+            <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo &nbsp;·&nbsp;
+            Klik kanvas dengan <i class="bi bi-fonts"></i> untuk teks &nbsp;·&nbsp;
+            <i class="bi bi-camera"></i> Tangkap untuk screenshot &nbsp;·&nbsp;
+            <i class="bi bi-collection-play"></i> Simpan untuk menyimpan rekaman ke galeri
         </p>
 
-        <!-- Playback preview -->
+        <!-- Inline playback preview -->
         <div id="playback_wrap" class="mt-3 d-none">
-            <p class="text-secondary small mb-1">Hasil Rekaman</p>
-            <img src="" id="frm" alt="Rekaman akan muncul di sini"
+            <p class="text-secondary small mb-1">Pratinjau Rekaman</p>
+            <img src="" id="frm" alt="Rekaman frame"
                  class="rounded-2 border border-secondary" />
+            <video id="frm_video" controls
+                   class="rounded-2 border border-secondary d-none"
+                   style="max-width:100%"></video>
         </div>
 
+        <!-- ── Gallery ──────────────────────────────────────────── -->
+        <section id="gallery_section" class="mt-4">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <h6 class="text-secondary mb-0">
+                    <i class="bi bi-images"></i> Galeri
+                </h6>
+            </div>
+
+            <p id="gallery_empty" class="text-secondary small fst-italic">
+                Belum ada item. Gunakan <i class="bi bi-camera"></i> Tangkap atau
+                <i class="bi bi-collection-play"></i> Simpan untuk menambahkan.
+            </p>
+
+            <div id="gallery_grid" class="gallery-grid"></div>
+        </section>
+
     </main>
+
+    <!-- ── Gallery Lightbox Modal ─────────────────────────────── -->
+    <div class="modal fade" id="galleryModal" tabindex="-1"
+         aria-label="Galeri" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content bg-black border-secondary">
+
+                <div class="modal-header border-secondary py-2">
+                    <h6 class="modal-title text-secondary mb-0">
+                        <i class="bi bi-images"></i> Galeri
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white"
+                            data-bs-dismiss="modal" aria-label="Tutup"></button>
+                </div>
+
+                <div class="modal-body p-0">
+                    <div id="galleryCarousel" class="carousel slide" data-bs-ride="false">
+
+                        <!-- Indicators -->
+                        <div class="carousel-indicators" id="galleryCarouselIndicators"></div>
+
+                        <!-- Slides -->
+                        <div class="carousel-inner" id="galleryCarouselInner"></div>
+
+                        <!-- Controls -->
+                        <button class="carousel-control-prev" type="button"
+                                data-bs-target="#galleryCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Sebelumnya</span>
+                        </button>
+                        <button class="carousel-control-next" type="button"
+                                data-bs-target="#galleryCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Berikutnya</span>
+                        </button>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="canvs.js"></script>
