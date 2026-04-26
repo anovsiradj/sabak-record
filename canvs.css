@@ -1,32 +1,218 @@
-/* ── Canvas ──────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   RESET & ROOT
+═══════════════════════════════════════════════════════════════ */
 
-.canvas-wrapper {
-    background: #111;
-    line-height: 0;
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+    --header-h:   44px;
+    --sidebar-w:  48px;
+    --bg:         #111;
+    --surface:    #1a1a1a;
+    --border:     #2e2e2e;
+    --text-muted: #666;
+    --accent:     #0d6efd;
 }
 
-#sabak {
-    display: block;
+body.sabak-app {
+    background: var(--bg);
+    color: #e0e0e0;
+    font-family: system-ui, sans-serif;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════════════════════ */
+
+.sabak-header {
+    height: var(--header-h);
+    min-height: var(--header-h);
+    background: #0a0a0a;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.75rem;
+    flex-shrink: 0;
+    /* No overflow at all — lets native <select> and any future
+       floating elements render without clipping */
+}
+
+.sabak-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    margin-right: 0.5rem;
+    color: #ccc;
+}
+
+/* ── Header buttons ─────────────────────────────────────────── */
+
+.sabak-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+}
+
+.hbtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.78rem;
+    background: transparent;
+    color: #ccc;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+
+.hbtn:hover          { background: #2a2a2a; border-color: var(--border); color: #fff; }
+.hbtn-danger:hover   { background: #3b1010; border-color: #7f1d1d; color: #f87171; }
+.hbtn-primary:hover  { background: #0d2a5e; border-color: #1d4ed8; color: #93c5fd; }
+.hbtn-success:hover  { background: #0d3b1e; border-color: #166534; color: #86efac; }
+.hbtn-warning:hover  { background: #3b2a00; border-color: #854d0e; color: #fde68a; }
+
+.hbtn-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+    margin: 0 0.25rem;
+    flex-shrink: 0;
+}
+
+/* Native select in header — no floating, no stacking context */
+.hselect {
+    background: transparent;
+    color: #ccc;
+    border: none;
+    font-size: 0.78rem;
+    cursor: pointer;
+    outline: none;
+    padding: 0;
+    /* Use system select appearance so it renders above everything natively */
+}
+
+/* ── Status badges ──────────────────────────────────────────── */
+
+.sabak-header-status {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.sbadge {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    background: #2a2a2a;
+    color: #888;
+    white-space: nowrap;
+}
+
+.sbadge.drawing   { background: var(--accent); color: #fff; }
+.sbadge.recording {
+    background: #dc3545;
+    color: #fff;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   BODY LAYOUT  (sidebar + workspace)
+═══════════════════════════════════════════════════════════════ */
+
+.sabak-body {
+    display: flex;
+    flex: 1;
+    min-height: 0; /* allow flex children to shrink below content size */
+    /* No overflow here — workspace handles its own scroll */
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════════════════ */
+
+.sabak-sidebar {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 0;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    /* No overflow — lw-popover is body-level so doesn't need to escape */
+}
+
+.sidebar-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
     width: 100%;
-    height: auto;
-    cursor: crosshair;
-    touch-action: none;
+    padding: 0 5px;
 }
 
-/* ── Toolbar ─────────────────────────────────────────────────── */
-
-.toolbar {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 0.5rem;
-    padding: 0.5rem 0.75rem;
+.sidebar-sep {
+    width: 28px;
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
 }
 
-/* ── Colour swatches ─────────────────────────────────────────── */
+/* ── Tool buttons ───────────────────────────────────────────── */
+
+.tool-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.1s, color 0.1s, border-color 0.1s;
+    flex-shrink: 0;
+}
+
+.tool-btn:hover {
+    background: #2a2a2a;
+    border-color: var(--border);
+    color: #fff;
+}
+
+.tool-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+/* ── Colour swatches ────────────────────────────────────────── */
 
 .color-swatch {
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     border: 2px solid transparent;
     padding: 0;
@@ -40,15 +226,122 @@
 .color-swatch.active {
     border-color: #fff;
     transform: scale(1.15);
-    box-shadow: 0 0 0 2px #0d6efd;
+    box-shadow: 0 0 0 2px var(--accent);
 }
 
-/* ── Active tool button ──────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   LINE WIDTH — HOVER-REVEAL POPOVER (body-level, JS-positioned)
+═══════════════════════════════════════════════════════════════ */
 
-.tool-btn.active {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-    color: #fff;
+.lw-trigger-wrap {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 0 5px;
+}
+
+.lw-dot-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.lw-dot {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #ccc;
+    transition: width 0.15s, height 0.15s;
+}
+
+/* Popover — fixed to viewport, shown/hidden by JS */
+.lw-popover {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    width: 52px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 9999;
+    box-shadow: 4px 4px 12px rgba(0,0,0,0.6);
+}
+
+.lw-popover.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.lw-slider {
+    writing-mode: vertical-lr;
+    direction: rtl;
+    width: 6px;
+    height: 100px;
+    cursor: pointer;
+    accent-color: var(--accent);
+    background: transparent;
+}
+
+.lw-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   WORKSPACE
+═══════════════════════════════════════════════════════════════ */
+
+.sabak-workspace {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+    background: #0d0d0d;
+}
+
+/* ── Canvas wrapper ─────────────────────────────────────────── */
+
+/* Fixed height = full body height minus header.
+   Gallery and playback scroll below it inside the workspace.
+   flex-shrink: 0 prevents it from collapsing when siblings grow. */
+.canvas-wrapper {
+    flex-shrink: 0;
+    height: calc(100dvh - var(--header-h));
+    background: #111;
+    line-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#sabak {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    cursor: crosshair;
+    touch-action: none;
+    position: relative;
+    z-index: 0;
+}
+
+/* Inner container that holds canvas + ghost overlay.
+   Isolated stacking context so it never traps header/sidebar popups. */
+.canvas-inner {
+    position: relative;
+    display: inline-block; /* shrink-wraps the canvas */
+    line-height: 0;
+    z-index: 0;
 }
 
 /* Text input overlay */
@@ -57,41 +350,60 @@
     line-height: 1.4;
 }
 
-/* ── Playback preview ────────────────────────────────────────── */
+/* ── Playback preview ───────────────────────────────────────── */
 
-#frm {
-    max-width: 100%;
+.playback-wrap {
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    border-top: 1px solid var(--border);
+}
+
+.playback-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.playback-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.playback-media {
+    max-width: 480px;
     height: auto;
     display: block;
+    border-radius: 6px;
+    border: 1px solid var(--border);
 }
 
-/* ── Status badges ───────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   GALLERY
+═══════════════════════════════════════════════════════════════ */
 
-#badge_drawing            { background-color: #333; }
-#badge_drawing.drawing    { background-color: #0d6efd; }
-#badge_record             { background-color: #333; }
-#badge_record.recording   {
-    background-color: #dc3545;
-    animation: pulse 1s infinite;
+.gallery-section {
+    padding: 0.75rem;
+    border-top: 1px solid var(--border);
 }
 
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.5; }
+.gallery-header {
+    margin-bottom: 0.5rem;
 }
-
-/* ── Gallery grid ────────────────────────────────────────────── */
 
 .gallery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.6rem;
 }
 
 .gallery-item {
-    background: #1a1a1a;
-    border: 1px solid #333;
-    border-radius: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -121,51 +433,45 @@
 
 .gallery-thumb:hover img { opacity: 0.85; }
 
-.gallery-video-icon {
-    font-size: 2.5rem;
-    color: #555;
-}
+.gallery-video-icon { font-size: 2rem; color: #555; }
 
 .gallery-footer {
-    padding: 0.3rem 0.5rem 0.1rem;
-    font-size: 0.72rem;
-    color: #888;
+    padding: 0.25rem 0.4rem 0.1rem;
+    font-size: 0.7rem;
+    color: #777;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.gallery-label { display: inline; }
-
 .gallery-actions {
     display: flex;
-    gap: 0.25rem;
-    padding: 0.3rem 0.5rem 0.4rem;
+    gap: 0.2rem;
+    padding: 0.25rem 0.4rem 0.35rem;
 }
 
-/* Extra-small button variant */
 .btn-xs {
-    padding: 0.1rem 0.35rem;
-    font-size: 0.72rem;
+    padding: 0.1rem 0.3rem;
+    font-size: 0.7rem;
     line-height: 1.4;
-    border-radius: 0.25rem;
+    border-radius: 4px;
 }
 
-/* ── Lightbox carousel ───────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   LIGHTBOX CAROUSEL
+═══════════════════════════════════════════════════════════════ */
 
 .gallery-lightbox-media {
-    max-height: 75vh;
+    max-height: 78vh;
     object-fit: contain;
     background: #000;
 }
 
-#galleryCarousel .carousel-item {
-    background: #000;
-}
+#galleryCarousel .carousel-item { background: #000; }
 
 #galleryCarousel .carousel-caption {
     background: rgba(0,0,0,0.55);
-    border-radius: 0.4rem;
-    padding: 0.3rem 0.75rem;
-    bottom: 1.5rem;
+    border-radius: 4px;
+    padding: 0.25rem 0.6rem;
+    bottom: 1.25rem;
 }

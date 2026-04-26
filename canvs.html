@@ -9,16 +9,15 @@
   [20260426] rombak: Bootstrap 5 dark mode, favicon SVG
   [20260426] rombak: modul JS, undo, shape tools, text tool
   [20260426] tambah: galeri, MediaRecorder, lightbox
+  [20260426] rombak: layout MS Paint, sidebar, header actions, canvas size
 -->
 <!DOCTYPE html>
 <html lang="id" data-bs-theme="dark">
-
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sabak — Papan Tulis</title>
 
-    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23222'/%3E%3Crect x='6' y='8' width='52' height='36' rx='4' fill='%23111' stroke='%23555' stroke-width='2'/%3E%3Cpath d='M14 36 Q22 18 30 28 Q38 38 46 16' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='20' y='48' width='24' height='6' rx='2' fill='%23888'/%3E%3Crect x='29' y='44' width='6' height='5' rx='1' fill='%23888'/%3E%3C/svg%3E" />
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
@@ -26,172 +25,191 @@
     <link rel="stylesheet" href="canvs.css" />
 </head>
 
-<body class="bg-dark text-light min-vh-100 d-flex flex-column">
+<body class="sabak-app">
 
-    <!-- ── Navbar ─────────────────────────────────────────────── -->
-    <nav class="navbar navbar-dark bg-black border-bottom border-secondary px-3 py-2">
-        <span class="navbar-brand d-flex align-items-center gap-2 mb-0">
-            <svg width="28" height="28" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <!-- ══════════════════════════════════════════════════════════
+         HEADER
+    ══════════════════════════════════════════════════════════ -->
+    <header class="sabak-header">
+
+        <!-- Brand -->
+        <div class="sabak-brand">
+            <svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true">
                 <rect width="64" height="64" rx="10" fill="#222"/>
                 <rect x="6" y="8" width="52" height="36" rx="4" fill="#111" stroke="#555" stroke-width="2"/>
                 <path d="M14 36 Q22 18 30 28 Q38 38 46 16" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
                 <rect x="20" y="48" width="24" height="6" rx="2" fill="#888"/>
                 <rect x="29" y="44" width="6" height="5" rx="1" fill="#888"/>
             </svg>
-            <span class="fw-semibold fs-5">Sabak</span>
-        </span>
-        <div class="d-flex align-items-center gap-2 ms-auto">
-            <span class="badge bg-secondary font-monospace" id="sbk_ordinat">X: 0  Y: 0</span>
-            <span class="badge" id="badge_drawing">Tidak Melukis</span>
-            <span class="badge" id="badge_record">Tidak Merekam</span>
-        </div>
-    </nav>
-
-    <!-- ── Main ───────────────────────────────────────────────── -->
-    <main class="flex-grow-1 container-fluid px-3 py-3">
-
-        <!-- Canvas -->
-        <div class="canvas-wrapper rounded-3 overflow-hidden mb-3 shadow">
-            <canvas id="sabak" width="1200" height="600"></canvas>
+            <span>Sabak</span>
         </div>
 
-        <!-- Toolbar -->
-        <div class="toolbar d-flex flex-wrap align-items-center gap-2">
+        <!-- Action buttons -->
+        <div class="sabak-header-actions">
 
-            <!-- Colours -->
-            <div class="d-flex align-items-center gap-1" id="sbk_color"
-                 role="group" aria-label="Pilih warna">
+            <!-- Undo -->
+            <button class="hbtn" title="Undo (Ctrl+Z)" onclick="history.go(0)" style="display:none" id="btn_undo_hidden"></button>
+
+            <!-- Clear -->
+            <button class="hbtn hbtn-danger" onclick="sbk_reset()" title="Bersihkan kanvas">
+                <i class="bi bi-trash3"></i><span>Bersihkan</span>
+            </button>
+
+            <!-- Capture -->
+            <button class="hbtn hbtn-primary" onclick="sabak_capture()" title="Tangkap ke galeri">
+                <i class="bi bi-camera"></i><span>Tangkap</span>
+            </button>
+
+            <div class="hbtn-sep"></div>
+
+            <!-- Record mode toggle -->
+            <button class="hbtn" id="btn_record_mode"
+                    onclick="sabak_toggle_record_mode()" title="Ganti mode rekam">
+                <i class="bi bi-camera-video"></i><span id="btn_record_mode_label">Stream</span>
+            </button>
+
+            <!-- Record -->
+            <button class="hbtn hbtn-success" onclick="sabak_record_start()" title="Mulai rekam">
+                <i class="bi bi-record-circle"></i><span>Rekam</span>
+            </button>
+            <button class="hbtn hbtn-warning" onclick="sabak_record_stop()" title="Berhenti rekam">
+                <i class="bi bi-stop-circle"></i><span>Stop</span>
+            </button>
+
+            <div class="hbtn-sep"></div>
+
+            <!-- Canvas size — plain select, no floating dropdown needed -->
+            <label class="hbtn" style="cursor:default; gap:0.3rem;">
+                <i class="bi bi-aspect-ratio"></i>
+                <select id="canvas_size_select" class="hselect" title="Ukuran kanvas">
+                    <option value="default">Default</option>
+                    <optgroup label="Preset">
+                        <option value="16:9">16:9 — Landscape HD</option>
+                        <option value="9:16">9:16 — Portrait HD</option>
+                        <option value="1:1">1:1 — Kotak</option>
+                        <option value="4:3">4:3 — Landscape Klasik</option>
+                        <option value="3:4">3:4 — Portrait Klasik</option>
+                        <option value="3:2">3:2 — Foto Landscape</option>
+                        <option value="2:3">2:3 — Foto Portrait</option>
+                    </optgroup>
+                </select>
+            </label>
+
+        </div>
+
+        <!-- Status badges -->
+        <div class="sabak-header-status">
+            <span class="badge bg-secondary font-monospace small" id="sbk_ordinat">X: 0  Y: 0</span>
+            <span class="sbadge" id="badge_drawing">Tidak Melukis</span>
+            <span class="sbadge" id="badge_record">Tidak Merekam</span>
+        </div>
+
+    </header>
+
+    <!-- ══════════════════════════════════════════════════════════
+         BODY  (sidebar + workspace)
+    ══════════════════════════════════════════════════════════ -->
+    <div class="sabak-body">
+
+        <!-- ── Left Sidebar ──────────────────────────────────── -->
+        <aside class="sabak-sidebar">
+
+            <!-- Drawing tools -->
+            <div class="sidebar-group" role="group" aria-label="Alat gambar">
+                <button class="tool-btn active" data-tool="pen"    title="Pena"><i class="bi bi-pen"></i></button>
+                <button class="tool-btn"        data-tool="eraser" title="Penghapus"><i class="bi bi-eraser"></i></button>
+                <button class="tool-btn"        data-tool="line"   title="Garis"><i class="bi bi-slash-lg"></i></button>
+                <button class="tool-btn"        data-tool="rect"   title="Persegi"><i class="bi bi-square"></i></button>
+                <button class="tool-btn"        data-tool="circle" title="Lingkaran"><i class="bi bi-circle"></i></button>
+                <button class="tool-btn"        data-tool="text"   title="Teks"><i class="bi bi-fonts"></i></button>
+            </div>
+
+            <div class="sidebar-sep"></div>
+
+            <!-- Line width — hover-reveal -->
+            <div class="lw-trigger-wrap" title="Ketebalan garis">
+                <button class="tool-btn lw-trigger" id="lw_trigger_btn" aria-label="Ketebalan garis">
+                    <span class="lw-dot-wrap">
+                        <span id="line_width_preview" class="lw-dot"></span>
+                    </span>
+                </button>
+            </div>
+
+            <div class="sidebar-sep"></div>
+
+            <!-- Colour palette -->
+            <div class="sidebar-group" id="sbk_color" role="group" aria-label="Pilih warna">
                 <button class="color-swatch" data-clr="#ffffff" title="Putih"></button>
                 <button class="color-swatch" data-clr="#facc15" title="Kuning"></button>
                 <button class="color-swatch" data-clr="#f472b6" title="Pink"></button>
                 <button class="color-swatch" data-clr="#4ade80" title="Hijau"></button>
                 <button class="color-swatch" data-clr="#38bdf8" title="Biru"></button>
                 <button class="color-swatch" data-clr="#f87171" title="Merah"></button>
+                <button class="color-swatch" data-clr="#fb923c" title="Oranye"></button>
+                <button class="color-swatch" data-clr="#a78bfa" title="Ungu"></button>
+                <button class="color-swatch" data-clr="#34d399" title="Hijau Muda"></button>
+                <button class="color-swatch" data-clr="#94a3b8" title="Abu-abu"></button>
             </div>
 
-            <div class="vr opacity-25"></div>
+        </aside>
 
-            <!-- Line width -->
-            <div class="d-flex align-items-center gap-2" title="Ketebalan garis">
-                <i class="bi bi-pencil text-secondary small"></i>
-                <input type="range" class="form-range" id="line_width"
-                       min="1" max="30" value="2" style="width:90px" />
-                <span class="text-secondary font-monospace small"
-                      id="line_width_val" style="min-width:28px">2px</span>
+        <!-- ── Workspace ─────────────────────────────────────── -->
+        <div class="sabak-workspace">
+
+            <!-- Canvas area -->
+            <div class="canvas-wrapper" id="canvas_wrapper">
+                <canvas id="sabak"></canvas>
             </div>
 
-            <div class="vr opacity-25"></div>
-
-            <!-- Drawing tools -->
-            <div class="d-flex align-items-center gap-1" role="group" aria-label="Alat gambar">
-                <button class="btn btn-sm btn-outline-light tool-btn active"
-                        data-tool="pen" title="Pena">
-                    <i class="bi bi-pen"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-light tool-btn"
-                        data-tool="eraser" title="Penghapus">
-                    <i class="bi bi-eraser"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-light tool-btn"
-                        data-tool="line" title="Garis">
-                    <i class="bi bi-slash-lg"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-light tool-btn"
-                        data-tool="rect" title="Persegi">
-                    <i class="bi bi-square"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-light tool-btn"
-                        data-tool="circle" title="Lingkaran">
-                    <i class="bi bi-circle"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-light tool-btn"
-                        data-tool="text" title="Teks">
-                    <i class="bi bi-fonts"></i>
-                </button>
+            <!-- Inline playback preview -->
+            <div id="playback_wrap" class="playback-wrap d-none">
+                <div class="playback-header">
+                    <span class="text-secondary small">
+                        <i class="bi bi-film"></i> Pratinjau Rekaman
+                    </span>
+                    <div class="playback-actions">
+                        <button class="hbtn" id="btn_play_preview"
+                                onclick="sabak_playr()" title="Putar rekaman"
+                                style="display:none">
+                            <i class="bi bi-play-circle"></i><span>Putar</span>
+                        </button>
+                        <button class="hbtn hbtn-primary" onclick="sabak_save_recording()"
+                                title="Simpan rekaman ke galeri">
+                            <i class="bi bi-collection-play"></i><span>Simpan ke Galeri</span>
+                        </button>
+                        <button class="hbtn hbtn-danger" onclick="sabak_close_preview()"
+                                title="Tutup pratinjau">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                </div>
+                <img src="" id="frm" alt="Rekaman frame" class="playback-media" />
+                <video id="frm_video" controls class="playback-media d-none"></video>
             </div>
 
-            <div class="vr opacity-25"></div>
+            <!-- Gallery -->
+            <section id="gallery_section" class="gallery-section">
+                <div class="gallery-header">
+                    <span class="text-secondary small">
+                        <i class="bi bi-images"></i> Galeri
+                    </span>
+                </div>
+                <p id="gallery_empty" class="text-secondary small fst-italic mb-2">
+                    Belum ada item. Gunakan <i class="bi bi-camera"></i> Tangkap atau
+                    <i class="bi bi-collection-play"></i> Simpan untuk menambahkan.
+                </p>
+                <div id="gallery_grid" class="gallery-grid"></div>
+            </section>
 
-            <!-- Canvas actions -->
-            <button class="btn btn-sm btn-outline-danger"
-                    onclick="sbk_reset()" title="Bersihkan kanvas">
-                <i class="bi bi-trash3"></i> Bersihkan
-            </button>
-            <button class="btn btn-sm btn-outline-primary"
-                    onclick="sabak_capture()" title="Simpan tangkapan ke galeri">
-                <i class="bi bi-camera"></i> Tangkap
-            </button>
+        </div><!-- /workspace -->
 
-            <div class="vr opacity-25"></div>
-
-            <!-- Recording -->
-            <button class="btn btn-sm btn-outline-secondary"
-                    id="btn_record_mode"
-                    onclick="sabak_toggle_record_mode()"
-                    title="Ganti mode rekam">
-                Mode: Frame
-            </button>
-            <button class="btn btn-sm btn-outline-success"
-                    onclick="sabak_record_start()" title="Mulai rekam">
-                <i class="bi bi-record-circle"></i> Rekam
-            </button>
-            <button class="btn btn-sm btn-outline-warning"
-                    onclick="sabak_record_stop()" title="Berhenti rekam">
-                <i class="bi bi-stop-circle"></i> Berhenti
-            </button>
-            <button class="btn btn-sm btn-outline-info"
-                    onclick="sabak_playr()" title="Putar rekaman">
-                <i class="bi bi-play-circle"></i> Putar
-            </button>
-            <button class="btn btn-sm btn-outline-primary"
-                    onclick="sabak_save_recording()" title="Simpan rekaman ke galeri">
-                <i class="bi bi-collection-play"></i> Simpan
-            </button>
-
-        </div><!-- /toolbar -->
-
-        <!-- Keyboard hint -->
-        <p class="text-secondary small mt-2 mb-0">
-            <kbd>Ctrl</kbd>+<kbd>Z</kbd> undo &nbsp;·&nbsp;
-            Klik kanvas dengan <i class="bi bi-fonts"></i> untuk teks &nbsp;·&nbsp;
-            <i class="bi bi-camera"></i> Tangkap untuk screenshot &nbsp;·&nbsp;
-            <i class="bi bi-collection-play"></i> Simpan untuk menyimpan rekaman ke galeri
-        </p>
-
-        <!-- Inline playback preview -->
-        <div id="playback_wrap" class="mt-3 d-none">
-            <p class="text-secondary small mb-1">Pratinjau Rekaman</p>
-            <img src="" id="frm" alt="Rekaman frame"
-                 class="rounded-2 border border-secondary" />
-            <video id="frm_video" controls
-                   class="rounded-2 border border-secondary d-none"
-                   style="max-width:100%"></video>
-        </div>
-
-        <!-- ── Gallery ──────────────────────────────────────────── -->
-        <section id="gallery_section" class="mt-4">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <h6 class="text-secondary mb-0">
-                    <i class="bi bi-images"></i> Galeri
-                </h6>
-            </div>
-
-            <p id="gallery_empty" class="text-secondary small fst-italic">
-                Belum ada item. Gunakan <i class="bi bi-camera"></i> Tangkap atau
-                <i class="bi bi-collection-play"></i> Simpan untuk menambahkan.
-            </p>
-
-            <div id="gallery_grid" class="gallery-grid"></div>
-        </section>
-
-    </main>
+    </div><!-- /body -->
 
     <!-- ── Gallery Lightbox Modal ─────────────────────────────── -->
     <div class="modal fade" id="galleryModal" tabindex="-1"
          aria-label="Galeri" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content bg-black border-secondary">
-
                 <div class="modal-header border-secondary py-2">
                     <h6 class="modal-title text-secondary mb-0">
                         <i class="bi bi-images"></i> Galeri
@@ -199,17 +217,13 @@
                     <button type="button" class="btn-close btn-close-white"
                             data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
-
                 <div class="modal-body p-0">
-                    <div id="galleryCarousel" class="carousel slide" data-bs-ride="false">
-
-                        <!-- Indicators -->
+                    <div id="galleryCarousel" class="carousel slide"
+                         data-bs-ride="false"
+                         data-bs-touch="false">
+                        <!-- touch disabled — video controls need pointer events -->
                         <div class="carousel-indicators" id="galleryCarouselIndicators"></div>
-
-                        <!-- Slides -->
-                        <div class="carousel-inner" id="galleryCarouselInner"></div>
-
-                        <!-- Controls -->
+                        <div class="carousel-inner"      id="galleryCarouselInner"></div>
                         <button class="carousel-control-prev" type="button"
                                 data-bs-target="#galleryCarousel" data-bs-slide="prev">
                             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
@@ -220,16 +234,20 @@
                             <span class="carousel-control-next-icon" aria-hidden="true"></span>
                             <span class="visually-hidden">Berikutnya</span>
                         </button>
-
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="canvs.js"></script>
-</body>
 
+    <!-- Line-width popover — appended to body to escape overflow containers -->
+    <div id="lw_popover" class="lw-popover" role="tooltip" aria-hidden="true">
+        <input type="range" id="line_width" min="1" max="30" value="2"
+               orient="vertical" class="lw-slider" />
+        <span class="lw-label" id="line_width_val">2px</span>
+    </div>
+</body>
 </html>

@@ -1,16 +1,14 @@
 // canvs.js — entry point
-// Initialises canvas, wires all modules together.
 
 import { state, BG_COLOR } from "./js/state.js";
 import { initUndo }        from "./js/undo.js";
 import { initTools, onDown, onMove, onUp, onLeave, getPos } from "./js/tools.js";
-import { recordStart, recordStop, play,
+import { recordStart, recordStop, play, closePreview,
          saveRecordingToGallery, toggleRecordMode, syncModeToggle } from "./js/record.js";
 import { initColorPalette, initToolButtons, initLineWidth,
          resetCanvas, updateDrawingBadge, updateOrdinat } from "./js/ui.js";
 import { captureToGallery, initGallery } from "./js/gallery.js";
-
-// ─── Init canvas ──────────────────────────────────────────────────────────────
+import { initCanvasSize } from "./js/canvas-size.js";
 
 function initCanvas() {
     state.canvas = document.getElementById("sabak");
@@ -19,23 +17,15 @@ function initCanvas() {
     state.sbk.lineWidth   = state.lineWidth;
     state.sbk.lineCap     = "round";
     state.sbk.lineJoin    = "round";
-    state.sbk.fillStyle   = BG_COLOR;
-    state.sbk.fillRect(0, 0, state.canvas.width, state.canvas.height);
+    // Background is painted by initCanvasSize → setDefaultSize
 }
-
-// ─── Pointer wrappers ─────────────────────────────────────────────────────────
 
 function handleDown(e)  { onDown(e);  updateDrawingBadge(state.isDrawing); }
 function handleUp(e)    { onUp(e);    updateDrawingBadge(state.isDrawing); }
 function handleLeave()  { onLeave();  updateDrawingBadge(state.isDrawing); }
-function handleMove(e)  {
-    onMove(e);
-    const pos = getPos(e);
-    updateOrdinat(pos.x, pos.y);
-}
+function handleMove(e)  { onMove(e);  updateOrdinat(getPos(e).x, getPos(e).y); }
 
-// ─── Window bridges (for HTML onclick) ───────────────────────────────────────
-
+// Window bridges for HTML onclick
 window.sabak_record_start       = recordStart;
 window.sabak_record_stop        = recordStop;
 window.sabak_playr              = play;
@@ -43,11 +33,11 @@ window.sbk_reset                = resetCanvas;
 window.sabak_save_recording     = saveRecordingToGallery;
 window.sabak_capture            = captureToGallery;
 window.sabak_toggle_record_mode = toggleRecordMode;
-
-// ─── Bootstrap ────────────────────────────────────────────────────────────────
+window.sabak_close_preview      = closePreview;
 
 window.addEventListener("load", function () {
     initCanvas();
+    initCanvasSize();   // sets canvas size + paints BG
     initUndo();
     initTools();
     initColorPalette();

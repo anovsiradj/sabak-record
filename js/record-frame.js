@@ -13,7 +13,7 @@ let playTimer    = null;
 let recording    = false;
 
 function capture() {
-    frames.push(state.canvas.toDataURL("image/png"));
+    frames.push(state.canvas.toDataURL("image/webp", 0.85));
 }
 
 function stopPlay() {
@@ -49,7 +49,7 @@ export function play(imgEl) {
     }, 1000 / FPS);
 }
 
-/** Returns the last captured frame as a PNG data-URL, or null. */
+/** Returns the last captured frame as a WebP data-URL, or null. */
 export function getLastFrame() {
     return frameCount > 0 ? frames[frameCount - 1] : null;
 }

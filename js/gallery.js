@@ -11,8 +11,8 @@ let nextId = 1;
 
 // ─── Thumbnail helpers ────────────────────────────────────────────────────────
 
-/** Build a small thumbnail data-URL from a full-size PNG data-URL. */
-function makePngThumb(dataURL, cb) {
+/** Build a small thumbnail data-URL from a full-size data-URL. */
+function makeThumb(dataURL, cb) {
     const img = new Image();
     img.onload = function () {
         const c = document.createElement("canvas");
@@ -20,14 +20,14 @@ function makePngThumb(dataURL, cb) {
         c.height = 90;
         const ctx = c.getContext("2d");
         ctx.drawImage(img, 0, 0, 160, 90);
-        cb(c.toDataURL("image/jpeg", 0.7));
+        cb(c.toDataURL("image/webp", 0.7));
     };
     img.src = dataURL;
 }
 
 /** For frame recordings, use the last frame as thumbnail. */
 function makeFramesThumb(frames, cb) {
-    makePngThumb(frames[frames.length - 1], cb);
+    makeThumb(frames[frames.length - 1], cb);
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ export function addToGallery(item) {
     }
 
     if (item.type === "image") {
-        makePngThumb(item.src, finish);
+        makeThumb(item.src, finish);
     } else if (item.type === "frames") {
         makeFramesThumb(item.frames, finish);
     } else {
@@ -57,9 +57,9 @@ export function addToGallery(item) {
     }
 }
 
-/** Capture the current canvas as a PNG and add to gallery. */
+/** Capture the current canvas as a WebP and add to gallery. */
 export function captureToGallery() {
-    const dataURL = state.canvas.toDataURL("image/png");
+    const dataURL = state.canvas.toDataURL("image/webp", 0.92);
     addToGallery({ type: "image", src: dataURL, label: "Tangkapan" });
 }
 
@@ -154,14 +154,13 @@ export function renderGallery() {
 
 function downloadItem(item) {
     if (item.type === "image") {
-        triggerDownload(item.src, item.label + ".png");
+        triggerDownload(item.src, item.label + ".webp");
     } else if (item.type === "video" && item.blob) {
         const url = URL.createObjectURL(item.blob);
         triggerDownload(url, item.label + ".webm");
         setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
     } else if (item.type === "frames") {
-        // Download last frame as PNG
-        triggerDownload(item.frames[item.frames.length - 1], item.label + ".png");
+        triggerDownload(item.frames[item.frames.length - 1], item.label + ".webp");
     }
 }
 
@@ -237,7 +236,12 @@ function buildCarousel(activeIdx) {
             vid.src      = item.src;
             vid.controls = true;
             vid.className = "d-block w-100 gallery-lightbox-media";
+            // Stop carousel drag detection from stealing pointer events on the video
+            vid.addEventListener("mousedown",  function (e) { e.stopPropagation(); });
+            vid.addEventListener("touchstart", function (e) { e.stopPropagation(); }, { passive: true });
             slide.appendChild(vid);
+            // Mark slide so CSS can hide the carousel arrows over video
+            slide.classList.add("has-video");
         } else if (item.type === "frames") {
             // Animated frame player inside carousel
             const img = document.createElement("img");
@@ -263,9 +267,11 @@ function buildCarousel(activeIdx) {
 
     // Auto-play frames when carousel slides to a frames item
     const carouselEl = document.getElementById("galleryCarousel");
-    // Remove old listener to avoid stacking
     carouselEl.removeEventListener("slid.bs.carousel", onCarouselSlid);
     carouselEl.addEventListener("slid.bs.carousel", onCarouselSlid);
+
+    // Handle arrow visibility for the initial active slide
+    updateCarouselArrows(activeIdx);
 
     // Start playing if the initial slide is a frames item
     const activeItem = items[activeIdx];
@@ -278,9 +284,22 @@ function onCarouselSlid(e) {
     stopFramePlay();
     const idx  = e.to;
     const item = items[idx];
+    updateCarouselArrows(idx);
     if (item && item.type === "frames") {
         playFramesInSlide(item);
     }
+}
+
+function updateCarouselArrows(idx) {
+    const item    = items[idx];
+    const isVideo = item && item.type === "video";
+    const carousel = document.getElementById("galleryCarousel");
+    if (!carousel) return;
+    // Hide arrows over video so they don't block the native controls bar
+    carousel.querySelectorAll(".carousel-control-prev, .carousel-control-next")
+        .forEach(function (btn) {
+            btn.style.display = isVideo ? "none" : "";
+        });
 }
 
 function playFramesInSlide(item) {

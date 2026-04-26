@@ -22,6 +22,7 @@ function showPreview(src, isVideo) {
     const wrap = document.getElementById("playback_wrap");
     const frm  = document.getElementById("frm");
     const vid  = document.getElementById("frm_video");
+    const btn  = document.getElementById("btn_play_preview");
     if (!wrap) return;
 
     if (isVideo) {
@@ -33,6 +34,10 @@ function showPreview(src, isVideo) {
         frm.classList.remove("d-none");
         frm.src = src;
     }
+
+    // Putar button only makes sense for frame mode (video has native controls)
+    if (btn) btn.style.display = state.recordMode === "frame" ? "" : "none";
+
     wrap.classList.remove("d-none");
 }
 
@@ -44,6 +49,8 @@ function hidePreview() {
     if (frm) frm.src = "";
     if (vid) { vid.src = ""; vid.classList.add("d-none"); }
 }
+
+export function closePreview() { hidePreview(); }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
@@ -106,13 +113,15 @@ export function saveRecordingToGallery() {
 
 /** Sync the mode toggle button to reflect state.recordMode. */
 export function syncModeToggle() {
-    const btn = document.getElementById("btn_record_mode");
-    if (!btn) return;
+    const btn   = document.getElementById("btn_record_mode");
+    const label = document.getElementById("btn_record_mode_label");
     const isStream = state.recordMode === "stream";
-    btn.textContent = isStream ? "Mode: Stream" : "Mode: Frame";
-    btn.title = isStream
-        ? "Aktif: MediaRecorder (WebM). Klik untuk ganti ke Frame."
-        : "Aktif: Frame-by-frame (PNG). Klik untuk ganti ke Stream.";
+    if (btn) {
+        btn.title = isStream
+            ? "Aktif: MediaRecorder (WebM). Klik untuk ganti ke Frame."
+            : "Aktif: Frame-by-frame (WebP). Klik untuk ganti ke Stream.";
+    }
+    if (label) label.textContent = isStream ? "Stream" : "Frame";
 }
 
 export function toggleRecordMode() {

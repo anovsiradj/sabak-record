@@ -16,15 +16,26 @@ function initGhost() {
     ghost.id = "ghost";
     ghost.width  = state.canvas.width;
     ghost.height = state.canvas.height;
-    // Overlay exactly on top of the main canvas
-    ghost.style.position = "absolute";
-    ghost.style.top  = "0";
-    ghost.style.left = "0";
-    ghost.style.width  = "100%";
-    ghost.style.height = "100%";
-    ghost.style.pointerEvents = "none"; // clicks pass through to main canvas
-    state.canvas.parentElement.style.position = "relative";
-    state.canvas.parentElement.appendChild(ghost);
+    ghost.style.position      = "absolute";
+    ghost.style.top           = "0";
+    ghost.style.left          = "0";
+    ghost.style.width         = "100%";
+    ghost.style.height        = "100%";
+    ghost.style.pointerEvents = "none";
+    ghost.style.zIndex        = "1";
+
+    // Wrap canvas + ghost in a relative-positioned inner div
+    // so the wrapper itself stays out of the stacking context
+    // (keeps header dropdowns above the canvas area)
+    const wrapper = state.canvas.parentElement;
+    let inner = wrapper.querySelector(".canvas-inner");
+    if (!inner) {
+        inner = document.createElement("div");
+        inner.className = "canvas-inner";
+        wrapper.insertBefore(inner, state.canvas);
+        inner.appendChild(state.canvas);
+    }
+    inner.appendChild(ghost);
     gctx = ghost.getContext("2d");
 }
 
