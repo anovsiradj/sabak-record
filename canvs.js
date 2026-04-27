@@ -9,6 +9,7 @@ import { initColorPalette, initToolButtons, initLineWidth,
          resetCanvas, updateDrawingBadge, updateOrdinat } from "./js/ui.js";
 import { captureToGallery, initGallery } from "./js/gallery.js";
 import { initCanvasSize } from "./js/canvas-size.js";
+import { initFontPicker } from "./js/font-picker.js";
 
 const $ = window.$;
 
@@ -46,6 +47,7 @@ $(function () {
     initLineWidth();
     initGallery();
     syncModeToggle();
+    initFontPicker();
 
     updateDrawingBadge(false);
     updateOrdinat(0, 0);

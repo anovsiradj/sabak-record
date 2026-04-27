@@ -236,8 +236,16 @@ body.sabak-app {
     align-items: center;
     justify-content: center;
     font-size: 0.7rem;
-    color: rgba(255,255,255,0.7);
-    background-color: #555; /* updated live by JS */
+    /* Icon gets a dark text-shadow so it's visible on any background color */
+    color: #fff;
+    text-shadow:
+        0 0 2px #000,
+        0 0 4px #000,
+        1px 1px 0 #000,
+       -1px -1px 0 #000,
+        1px -1px 0 #000,
+       -1px  1px 0 #000;
+    background-color: #555;
     position: relative;
     overflow: hidden;
 }
@@ -321,6 +329,81 @@ body.sabak-app {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   TEXT OPTIONS POPOVER (body-level, JS-positioned)
+═══════════════════════════════════════════════════════════════ */
+
+.text-popover {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    width: 180px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 9999;
+    box-shadow: 4px 4px 12px rgba(0,0,0,0.6);
+}
+
+.text-popover.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.tp-label {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.tp-select {
+    width: 100%;
+    background: #111;
+    color: #ccc;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.78rem;
+    padding: 0.2rem 0.3rem;
+    cursor: pointer;
+    outline: none;
+    max-height: 200px;
+}
+
+.tp-preview {
+    font-size: 1rem;
+    color: #aaa;
+    background: #111;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.2rem 0.4rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 1.8rem;
+    line-height: 1.4;
+}
+
+.tp-size {
+    width: 100%;
+    background: #111;
+    color: #ccc;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.78rem;
+    padding: 0.2rem 0.3rem;
+    outline: none;
+    /* Hide spin buttons */
+    -moz-appearance: textfield;
+}
+.tp-size::-webkit-inner-spin-button,
+.tp-size::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+/* ═══════════════════════════════════════════════════════════════
    WORKSPACE
 ═══════════════════════════════════════════════════════════════ */
 
@@ -369,8 +452,18 @@ body.sabak-app {
 
 /* Text input overlay */
 #text_input_overlay {
-    font-family: sans-serif;
+    position:   fixed;
+    min-width:  120px;
+    background: rgba(0, 0, 0, 0.75);
+    border-radius: 0;
+    padding:    0 !important;
+    margin:     0 !important;
     line-height: 1.4;
+    resize:     both;
+    z-index:    100;
+    outline:    none;
+    box-sizing: content-box;
+    /* color, font-size, font-family, border, left, top set by JS */
 }
 
 /* ── Playback preview ───────────────────────────────────────── */

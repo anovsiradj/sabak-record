@@ -5,6 +5,9 @@ import { pushUndo } from "./undo.js";
 
 const $ = window.$;
 
+// to sync position for input textarea and output canvas
+const TEXT_MAGIC_NUMBER = 6;
+
 // ─── Ghost canvas (shape preview) ────────────────────────────────────────────
 
 let ghost = null;
@@ -56,23 +59,20 @@ function showTextInput(x, y) {
     const rect   = state.canvas.getBoundingClientRect();
     const scaleX = rect.width  / state.canvas.width;
     const scaleY = rect.height / state.canvas.height;
-    const fontSize = Math.max(14, state.lineWidth * 4);
 
-    $textInput = $("<textarea>").attr({ id: "text_input_overlay", rows: 2, placeholder: "Ketik teks…" })
+    const screenX = rect.left + x * scaleX;
+    const screenY = rect.top  + y * scaleY;
+
+    $textInput = $("<textarea>")
+        .attr({ id: "text_input_overlay", rows: 2, placeholder: "Ketik teks…" })
         .css({
-            position:     "absolute",
-            left:         rect.left + x * scaleX,
-            top:          rect.top  + y * scaleY + window.scrollY,
-            minWidth:     120,
-            background:   "rgba(0,0,0,0.75)",
-            color:        state.color,
-            border:       "1px dashed " + state.color,
-            borderRadius: 4,
-            padding:      "4px 6px",
-            fontSize:     fontSize,
-            resize:       "both",
-            zIndex:       100,
-            outline:      "none",
+            // Dynamic only — static styles live in #text_input_overlay CSS class
+            left:       screenX,
+            top:        screenY - TEXT_MAGIC_NUMBER,
+            color:      state.color,
+            border:     "1px dashed " + state.color,
+            fontSize:   state.fontSize + "px",
+            fontFamily: state.fontFace,
         })
         .on("keydown", function (e) {
             if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commitText(x, y); }
@@ -85,21 +85,24 @@ function showTextInput(x, y) {
 }
 
 function commitText(x, y) {
+    y -= TEXT_MAGIC_NUMBER
+
     if (!$textInput) return;
     const text = $textInput.val().trim();
     removeTextInput();
     if (!text) return;
 
     pushUndo();
-    const sbk      = state.sbk;
-    const fontSize = Math.max(14, state.lineWidth * 4);
+    const sbk   = state.sbk;
+    const lineH = state.fontSize * 1.4;
     sbk.globalCompositeOperation = "source-over";
-    sbk.fillStyle  = state.color;
-    sbk.font       = fontSize + "px sans-serif";
-    const lineH    = fontSize * 1.4;
+    sbk.fillStyle    = state.color;
+    sbk.font         = state.fontSize + "px " + state.fontFace;
+    sbk.textBaseline = "top";  // y = highest point of the glyph
     text.split("\n").forEach(function (line, i) {
         sbk.fillText(line, x, y + i * lineH);
     });
+    sbk.textBaseline = "alphabetic"; // restore default
 }
 
 function removeTextInput() {

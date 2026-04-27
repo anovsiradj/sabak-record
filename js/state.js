@@ -10,5 +10,7 @@ export const state = {
     color:      "#ffffff",
     lineWidth:  2,
     isDrawing:  false,
-    recordMode: "stream", // default to MediaRecorder
+    recordMode: "stream",
+    fontFace:   "sans-serif",
+    fontSize:   20,          // px, independent of lineWidth
 };
