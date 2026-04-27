@@ -10,14 +10,15 @@ import { initColorPalette, initToolButtons, initLineWidth,
 import { captureToGallery, initGallery } from "./js/gallery.js";
 import { initCanvasSize } from "./js/canvas-size.js";
 
+const $ = window.$;
+
 function initCanvas() {
-    state.canvas = document.getElementById("sabak");
+    state.canvas = $("#sabak")[0];
     state.sbk    = state.canvas.getContext("2d");
     state.sbk.strokeStyle = state.color;
     state.sbk.lineWidth   = state.lineWidth;
     state.sbk.lineCap     = "round";
     state.sbk.lineJoin    = "round";
-    // Background is painted by initCanvasSize → setDefaultSize
 }
 
 function handleDown(e)  { onDown(e);  updateDrawingBadge(state.isDrawing); }
@@ -35,9 +36,9 @@ window.sabak_capture            = captureToGallery;
 window.sabak_toggle_record_mode = toggleRecordMode;
 window.sabak_close_preview      = closePreview;
 
-window.addEventListener("load", function () {
+$(function () {
     initCanvas();
-    initCanvasSize();   // sets canvas size + paints BG
+    initCanvasSize();
     initUndo();
     initTools();
     initColorPalette();
@@ -49,11 +50,16 @@ window.addEventListener("load", function () {
     updateDrawingBadge(false);
     updateOrdinat(0, 0);
 
+    const $c = $(state.canvas);
+
+    // Mouse events
+    $c.on("mousemove", handleMove)
+      .on("mousedown", handleDown)
+      .on("mouseup",   handleUp)
+      .on("mouseout",  handleLeave);
+
+    // Touch events — must use native addEventListener for passive:false
     const c = state.canvas;
-    c.addEventListener("mousemove",   handleMove);
-    c.addEventListener("mousedown",   handleDown);
-    c.addEventListener("mouseup",     handleUp);
-    c.addEventListener("mouseout",    handleLeave);
     c.addEventListener("touchmove",   handleMove,  { passive: false });
     c.addEventListener("touchstart",  handleDown,  { passive: false });
     c.addEventListener("touchend",    handleUp,    { passive: false });

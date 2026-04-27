@@ -1,152 +1,109 @@
-// js/gallery.js
-// In-memory gallery: stores images (PNG data-URL) and videos (Blob URL / frames).
-// Renders a thumbnail grid. Opens a Bootstrap modal carousel as lightbox.
+// js/gallery.js — in-memory gallery, thumbnail grid, Bootstrap modal carousel lightbox.
 
 import { state } from "./state.js";
 
-// ─── Store ────────────────────────────────────────────────────────────────────
+const $ = window.$;
 
-let items = []; // [{ id, type, src, blob?, frames?, label, thumb }]
+let items  = [];
 let nextId = 1;
 
 // ─── Thumbnail helpers ────────────────────────────────────────────────────────
 
-/** Build a small thumbnail data-URL from a full-size data-URL. */
 function makeThumb(dataURL, cb) {
     const img = new Image();
     img.onload = function () {
-        const c = document.createElement("canvas");
-        c.width  = 160;
-        c.height = 90;
-        const ctx = c.getContext("2d");
-        ctx.drawImage(img, 0, 0, 160, 90);
+        const c   = document.createElement("canvas");
+        c.width   = 160;
+        c.height  = 90;
+        c.getContext("2d").drawImage(img, 0, 0, 160, 90);
         cb(c.toDataURL("image/webp", 0.7));
     };
     img.src = dataURL;
 }
 
-/** For frame recordings, use the last frame as thumbnail. */
 function makeFramesThumb(frames, cb) {
     makeThumb(frames[frames.length - 1], cb);
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-/**
- * Add an item to the gallery.
- * @param {object} item  { type: "image"|"video"|"frames", src?, blob?, frames?, label }
- */
 export function addToGallery(item) {
     const id = nextId++;
 
     function finish(thumb) {
         items.push({ id, thumb, ...item });
         renderGallery();
-        // Flash the gallery section into view
-        const section = document.getElementById("gallery_section");
-        if (section) section.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        $("#gallery_section")[0].scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
-    if (item.type === "image") {
-        makeThumb(item.src, finish);
-    } else if (item.type === "frames") {
-        makeFramesThumb(item.frames, finish);
-    } else {
-        // video — use a generic icon as thumb (can't easily thumbnail a blob URL)
-        finish(null);
-    }
+    if (item.type === "image")        makeThumb(item.src, finish);
+    else if (item.type === "frames")  makeFramesThumb(item.frames, finish);
+    else                              finish(null);
 }
 
-/** Capture the current canvas as a WebP and add to gallery. */
 export function captureToGallery() {
-    const dataURL = state.canvas.toDataURL("image/webp", 0.92);
-    addToGallery({ type: "image", src: dataURL, label: "Tangkapan" });
+    addToGallery({
+        type:  "image",
+        src:   state.canvas.toDataURL("image/webp", 0.92),
+        label: "Tangkapan",
+    });
 }
 
 // ─── Render grid ──────────────────────────────────────────────────────────────
 
 export function renderGallery() {
-    const grid    = document.getElementById("gallery_grid");
-    const empty   = document.getElementById("gallery_empty");
-    const section = document.getElementById("gallery_section");
-    if (!grid) return;
+    const $grid = $("#gallery_grid");
+    if (!$grid.length) return;
 
-    grid.innerHTML = "";
+    $grid.empty();
 
     if (items.length === 0) {
-        if (empty)   empty.classList.remove("d-none");
-        if (section) section.classList.add("gallery-empty");
+        $("#gallery_empty").removeClass("d-none");
         return;
     }
 
-    if (empty)   empty.classList.add("d-none");
-    if (section) section.classList.remove("gallery-empty");
+    $("#gallery_empty").addClass("d-none");
 
     items.forEach(function (item, idx) {
-        const col  = document.createElement("div");
-        col.className = "gallery-item";
-        col.dataset.idx = idx;
-
-        // Thumbnail
-        const thumb = document.createElement("div");
-        thumb.className = "gallery-thumb";
-
-        if (item.type === "video") {
-            thumb.innerHTML = '<div class="gallery-video-icon"><i class="bi bi-play-circle-fill"></i></div>';
-        } else if (item.thumb) {
-            const img = document.createElement("img");
-            img.src = item.thumb;
-            img.alt = item.label;
-            thumb.appendChild(img);
-        }
-
-        // Label + type badge
-        const footer = document.createElement("div");
-        footer.className = "gallery-footer";
         const typeIcon = item.type === "video"  ? "bi-camera-video"
                        : item.type === "frames" ? "bi-film"
                        :                          "bi-image";
-        footer.innerHTML =
-            `<span class="gallery-label"><i class="bi ${typeIcon}"></i> ${item.label}</span>`;
 
-        // Action buttons
-        const actions = document.createElement("div");
-        actions.className = "gallery-actions";
+        // Thumbnail content
+        let thumbHtml;
+        if (item.type === "video") {
+            thumbHtml = '<div class="gallery-video-icon"><i class="bi bi-play-circle-fill"></i></div>';
+        } else if (item.thumb) {
+            thumbHtml = `<img src="${item.thumb}" alt="${item.label}" />`;
+        } else {
+            thumbHtml = "";
+        }
 
-        const btnView = document.createElement("button");
-        btnView.className = "btn btn-xs btn-outline-light";
-        btnView.title = "Lihat";
-        btnView.innerHTML = '<i class="bi bi-eye"></i>';
-        btnView.addEventListener("click", function (e) {
-            e.stopPropagation();
-            openLightbox(idx);
-        });
+        const $col = $("<div>").addClass("gallery-item").attr("data-idx", idx);
 
-        const btnDl = document.createElement("button");
-        btnDl.className = "btn btn-xs btn-outline-info";
-        btnDl.title = "Unduh";
-        btnDl.innerHTML = '<i class="bi bi-download"></i>';
-        btnDl.addEventListener("click", function (e) {
-            e.stopPropagation();
-            downloadItem(item);
-        });
+        const $thumb = $("<div>").addClass("gallery-thumb").html(thumbHtml)
+            .on("click", function () { openLightbox(idx); });
 
-        const btnDel = document.createElement("button");
-        btnDel.className = "btn btn-xs btn-outline-danger";
-        btnDel.title = "Hapus";
-        btnDel.innerHTML = '<i class="bi bi-trash3"></i>';
-        btnDel.addEventListener("click", function (e) {
-            e.stopPropagation();
-            deleteItem(item.id);
-        });
+        const $footer = $("<div>").addClass("gallery-footer")
+            .html(`<span class="gallery-label"><i class="bi ${typeIcon}"></i> ${item.label}</span>`);
 
-        actions.append(btnView, btnDl, btnDel);
-        col.append(thumb, footer, actions);
+        const $btnView = $("<button>").addClass("btn btn-xs btn-outline-light")
+            .attr("title", "Lihat").html('<i class="bi bi-eye"></i>')
+            .on("click", function (e) { e.stopPropagation(); openLightbox(idx); });
 
-        // Click thumbnail to open lightbox
-        thumb.addEventListener("click", function () { openLightbox(idx); });
+        const $btnDl = $("<button>").addClass("btn btn-xs btn-outline-info")
+            .attr("title", "Unduh").html('<i class="bi bi-download"></i>')
+            .on("click", function (e) { e.stopPropagation(); downloadItem(item); });
 
-        grid.appendChild(col);
+        const $btnDel = $("<button>").addClass("btn btn-xs btn-outline-danger")
+            .attr("title", "Hapus").html('<i class="bi bi-trash3"></i>')
+            .on("click", function (e) { e.stopPropagation(); deleteItem(item.id); });
+
+        const $actions = $("<div>").addClass("gallery-actions")
+            .append($btnView, $btnDl, $btnDel);
+
+        $col.append($thumb, $footer, $actions);
+        $grid.append($col);
     });
 }
 
@@ -165,10 +122,7 @@ function downloadItem(item) {
 }
 
 function triggerDownload(url, filename) {
-    const a = document.createElement("a");
-    a.href     = url;
-    a.download = filename;
-    a.click();
+    $("<a>").attr({ href: url, download: filename })[0].click();
 }
 
 // ─── Delete ───────────────────────────────────────────────────────────────────
@@ -178,7 +132,7 @@ function deleteItem(id) {
     renderGallery();
 }
 
-// ─── Lightbox (Bootstrap modal + carousel) ────────────────────────────────────
+// ─── Lightbox ─────────────────────────────────────────────────────────────────
 
 let lightboxModal  = null;
 let framePlayTimer = null;
@@ -188,92 +142,78 @@ function stopFramePlay() {
 }
 
 export function openLightbox(startIdx) {
-    const modalEl = document.getElementById("galleryModal");
+    const modalEl = $("#galleryModal")[0];
     if (!modalEl) return;
 
     buildCarousel(startIdx);
 
     if (!lightboxModal) {
         lightboxModal = new bootstrap.Modal(modalEl);
-        modalEl.addEventListener("hidden.bs.modal", stopFramePlay);
+        $(modalEl).on("hidden.bs.modal", stopFramePlay);
     }
     lightboxModal.show();
 }
 
 function buildCarousel(activeIdx) {
-    const inner    = document.getElementById("galleryCarouselInner");
-    const indicators = document.getElementById("galleryCarouselIndicators");
-    if (!inner) return;
-
-    inner.innerHTML      = "";
-    indicators.innerHTML = "";
+    const $inner      = $("#galleryCarouselInner").empty();
+    const $indicators = $("#galleryCarouselIndicators").empty();
+    if (!$inner.length) return;
 
     items.forEach(function (item, idx) {
+        const isActive = idx === activeIdx;
+
         // Indicator dot
-        const dot = document.createElement("button");
-        dot.type = "button";
-        dot.dataset.bsTarget = "#galleryCarousel";
-        dot.dataset.bsSlideTo = idx;
-        dot.setAttribute("aria-label", "Slide " + (idx + 1));
-        if (idx === activeIdx) {
-            dot.classList.add("active");
-            dot.setAttribute("aria-current", "true");
-        }
-        indicators.appendChild(dot);
+        const $dot = $("<button>").attr({
+            type:              "button",
+            "data-bs-target":  "#galleryCarousel",
+            "data-bs-slide-to": idx,
+            "aria-label":      "Slide " + (idx + 1),
+        });
+        if (isActive) $dot.addClass("active").attr("aria-current", "true");
+        $indicators.append($dot);
 
         // Slide
-        const slide = document.createElement("div");
-        slide.className = "carousel-item" + (idx === activeIdx ? " active" : "");
+        const $slide = $("<div>").addClass("carousel-item" + (isActive ? " active" : ""));
 
         if (item.type === "image") {
-            const img = document.createElement("img");
-            img.src       = item.src;
-            img.className = "d-block w-100 gallery-lightbox-media";
-            img.alt       = item.label;
-            slide.appendChild(img);
+            $slide.append(
+                $("<img>").attr({ src: item.src, alt: item.label })
+                    .addClass("d-block w-100 gallery-lightbox-media")
+            );
         } else if (item.type === "video") {
-            const vid = document.createElement("video");
-            vid.src      = item.src;
-            vid.controls = true;
-            vid.className = "d-block w-100 gallery-lightbox-media";
-            // Stop carousel drag detection from stealing pointer events on the video
-            vid.addEventListener("mousedown",  function (e) { e.stopPropagation(); });
-            vid.addEventListener("touchstart", function (e) { e.stopPropagation(); }, { passive: true });
-            slide.appendChild(vid);
-            // Mark slide so CSS can hide the carousel arrows over video
-            slide.classList.add("has-video");
+            const $vid = $("<video>").attr({ src: item.src, controls: true })
+                .addClass("d-block w-100 gallery-lightbox-media")
+                .on("mousedown", function (e) { e.stopPropagation(); });
+            // touchstart needs native listener for passive:true
+            $vid[0].addEventListener("touchstart", function (e) { e.stopPropagation(); }, { passive: true });
+            $slide.append($vid).addClass("has-video");
         } else if (item.type === "frames") {
-            // Animated frame player inside carousel
-            const img = document.createElement("img");
-            img.src       = item.frames[0];
-            img.className = "d-block w-100 gallery-lightbox-media";
-            img.alt       = item.label;
-            img.dataset.frameIdx = "0";
-            img.dataset.itemId   = item.id;
-            slide.appendChild(img);
+            $slide.append(
+                $("<img>").attr({ src: item.frames[0], alt: item.label })
+                    .addClass("d-block w-100 gallery-lightbox-media")
+                    .data({ frameIdx: 0, itemId: item.id })
+                    .attr({ "data-frame-idx": 0, "data-item-id": item.id })
+            );
         }
 
-        // Caption
-        const cap = document.createElement("div");
-        cap.className = "carousel-caption d-none d-md-block";
         const typeLabel = item.type === "video"  ? "Video"
                         : item.type === "frames" ? "Rekaman Frame"
                         :                          "Gambar";
-        cap.innerHTML = `<small class="text-secondary">${typeLabel}</small><br/><span>${item.label}</span>`;
-        slide.appendChild(cap);
+        $slide.append(
+            $("<div>").addClass("carousel-caption d-none d-md-block").html(
+                `<small class="text-secondary">${typeLabel}</small><br/><span>${item.label}</span>`
+            )
+        );
 
-        inner.appendChild(slide);
+        $inner.append($slide);
     });
 
-    // Auto-play frames when carousel slides to a frames item
-    const carouselEl = document.getElementById("galleryCarousel");
-    carouselEl.removeEventListener("slid.bs.carousel", onCarouselSlid);
-    carouselEl.addEventListener("slid.bs.carousel", onCarouselSlid);
+    const $carousel = $("#galleryCarousel");
+    $carousel.off("slid.bs.carousel", onCarouselSlid)
+             .on("slid.bs.carousel",  onCarouselSlid);
 
-    // Handle arrow visibility for the initial active slide
     updateCarouselArrows(activeIdx);
 
-    // Start playing if the initial slide is a frames item
     const activeItem = items[activeIdx];
     if (activeItem && activeItem.type === "frames") {
         setTimeout(function () { playFramesInSlide(activeItem); }, 100);
@@ -282,38 +222,26 @@ function buildCarousel(activeIdx) {
 
 function onCarouselSlid(e) {
     stopFramePlay();
-    const idx  = e.to;
-    const item = items[idx];
-    updateCarouselArrows(idx);
-    if (item && item.type === "frames") {
-        playFramesInSlide(item);
-    }
+    const item = items[e.to];
+    updateCarouselArrows(e.to);
+    if (item && item.type === "frames") playFramesInSlide(item);
 }
 
 function updateCarouselArrows(idx) {
-    const item    = items[idx];
-    const isVideo = item && item.type === "video";
-    const carousel = document.getElementById("galleryCarousel");
-    if (!carousel) return;
-    // Hide arrows over video so they don't block the native controls bar
-    carousel.querySelectorAll(".carousel-control-prev, .carousel-control-next")
-        .forEach(function (btn) {
-            btn.style.display = isVideo ? "none" : "";
-        });
+    const isVideo = items[idx] && items[idx].type === "video";
+    $("#galleryCarousel .carousel-control-prev, #galleryCarousel .carousel-control-next")
+        .toggle(!isVideo);
 }
 
 function playFramesInSlide(item) {
     stopFramePlay();
-    const inner = document.getElementById("galleryCarouselInner");
-    if (!inner) return;
-    // Find the img with matching item id
-    const img = inner.querySelector(`img[data-item-id="${item.id}"]`);
-    if (!img) return;
+    const $img = $(`#galleryCarouselInner img[data-item-id="${item.id}"]`);
+    if (!$img.length) return;
     let i = 0;
     framePlayTimer = setInterval(function () {
-        img.src = item.frames[i % item.frames.length];
+        $img.attr("src", item.frames[i % item.frames.length]);
         i++;
-    }, 100); // 10 fps
+    }, 100);
 }
 
 export function initGallery() {

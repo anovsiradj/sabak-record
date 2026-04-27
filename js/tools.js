@@ -1,41 +1,40 @@
-// js/tools.js
-// Handles all drawing tools: pen, eraser, line, rect, circle, text.
-// Shape tools use a ghost canvas for live preview without dirtying the main canvas.
+// js/tools.js — drawing tools: pen, eraser, line, rect, circle, text.
 
 import { state } from "./state.js";
 import { pushUndo } from "./undo.js";
 
+const $ = window.$;
+
 // ─── Ghost canvas (shape preview) ────────────────────────────────────────────
 
-let ghost = null;   // <canvas> overlay for shape preview
-let gctx  = null;   // its 2d context
-let startX = 0, startY = 0; // pointer-down position
+let ghost = null;
+let gctx  = null;
+let startX = 0, startY = 0;
 
 function initGhost() {
     ghost = document.createElement("canvas");
-    ghost.id = "ghost";
+    ghost.id     = "ghost";
     ghost.width  = state.canvas.width;
     ghost.height = state.canvas.height;
-    ghost.style.position      = "absolute";
-    ghost.style.top           = "0";
-    ghost.style.left          = "0";
-    ghost.style.width         = "100%";
-    ghost.style.height        = "100%";
-    ghost.style.pointerEvents = "none";
-    ghost.style.zIndex        = "1";
 
-    // Wrap canvas + ghost in a relative-positioned inner div
-    // so the wrapper itself stays out of the stacking context
-    // (keeps header dropdowns above the canvas area)
-    const wrapper = state.canvas.parentElement;
-    let inner = wrapper.querySelector(".canvas-inner");
-    if (!inner) {
-        inner = document.createElement("div");
-        inner.className = "canvas-inner";
-        wrapper.insertBefore(inner, state.canvas);
-        inner.appendChild(state.canvas);
+    $(ghost).css({
+        position:      "absolute",
+        top:           0,
+        left:          0,
+        width:         "100%",
+        height:        "100%",
+        pointerEvents: "none",
+        zIndex:        1,
+    });
+
+    const $wrapper = $(state.canvas).parent();
+    let $inner = $wrapper.find(".canvas-inner");
+    if (!$inner.length) {
+        $inner = $("<div>").addClass("canvas-inner");
+        $wrapper.prepend($inner);
+        $inner.append(state.canvas);
     }
-    inner.appendChild(ghost);
+    $inner.append(ghost);
     gctx = ghost.getContext("2d");
 }
 
@@ -49,77 +48,65 @@ function applyStyle(ctx) {
 
 // ─── Text input overlay ───────────────────────────────────────────────────────
 
-let textInput = null;
+let $textInput = null;
 
 function showTextInput(x, y) {
-    if (textInput) removeTextInput();
+    if ($textInput) removeTextInput();
 
-    const rect = state.canvas.getBoundingClientRect();
+    const rect   = state.canvas.getBoundingClientRect();
     const scaleX = rect.width  / state.canvas.width;
     const scaleY = rect.height / state.canvas.height;
+    const fontSize = Math.max(14, state.lineWidth * 4);
 
-    textInput = document.createElement("textarea");
-    textInput.id = "text_input_overlay";
-    textInput.rows = 2;
-    textInput.placeholder = "Ketik teks…";
-    textInput.style.position   = "absolute";
-    textInput.style.left       = (rect.left + x * scaleX) + "px";
-    textInput.style.top        = (rect.top  + y * scaleY + window.scrollY) + "px";
-    textInput.style.minWidth   = "120px";
-    textInput.style.background = "rgba(0,0,0,0.75)";
-    textInput.style.color      = state.color;
-    textInput.style.border     = "1px dashed " + state.color;
-    textInput.style.borderRadius = "4px";
-    textInput.style.padding    = "4px 6px";
-    textInput.style.fontSize   = Math.max(14, state.lineWidth * 4) + "px";
-    textInput.style.resize     = "both";
-    textInput.style.zIndex     = "100";
-    textInput.style.outline    = "none";
-    document.body.appendChild(textInput);
-    textInput.focus();
+    $textInput = $("<textarea>").attr({ id: "text_input_overlay", rows: 2, placeholder: "Ketik teks…" })
+        .css({
+            position:     "absolute",
+            left:         rect.left + x * scaleX,
+            top:          rect.top  + y * scaleY + window.scrollY,
+            minWidth:     120,
+            background:   "rgba(0,0,0,0.75)",
+            color:        state.color,
+            border:       "1px dashed " + state.color,
+            borderRadius: 4,
+            padding:      "4px 6px",
+            fontSize:     fontSize,
+            resize:       "both",
+            zIndex:       100,
+            outline:      "none",
+        })
+        .on("keydown", function (e) {
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commitText(x, y); }
+            if (e.key === "Escape") removeTextInput();
+        })
+        .on("blur", function () { commitText(x, y); });
 
-    // Commit on Enter (without Shift), or on blur
-    textInput.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            commitText(x, y);
-        }
-        if (e.key === "Escape") {
-            removeTextInput();
-        }
-    });
-    textInput.addEventListener("blur", function () {
-        commitText(x, y);
-    });
+    $("body").append($textInput);
+    $textInput[0].focus();
 }
 
 function commitText(x, y) {
-    if (!textInput) return;
-    const text = textInput.value.trim();
+    if (!$textInput) return;
+    const text = $textInput.val().trim();
     removeTextInput();
     if (!text) return;
 
     pushUndo();
-    const sbk = state.sbk;
+    const sbk      = state.sbk;
+    const fontSize = Math.max(14, state.lineWidth * 4);
     sbk.globalCompositeOperation = "source-over";
-    sbk.fillStyle = state.color;
-    sbk.font = Math.max(14, state.lineWidth * 4) + "px sans-serif";
-    // Support multi-line
-    const lines = text.split("\n");
-    const lineH = Math.max(14, state.lineWidth * 4) * 1.4;
-    lines.forEach(function (line, i) {
+    sbk.fillStyle  = state.color;
+    sbk.font       = fontSize + "px sans-serif";
+    const lineH    = fontSize * 1.4;
+    text.split("\n").forEach(function (line, i) {
         sbk.fillText(line, x, y + i * lineH);
     });
 }
 
 function removeTextInput() {
-    if (textInput && textInput.parentElement) {
-        textInput.parentElement.removeChild(textInput);
-    }
-    textInput = null;
+    if ($textInput) { $textInput.remove(); $textInput = null; }
 }
 
-// ─── Pointer helpers ──────────────────────────────────────────────────────────
+// ─── Coordinate helper ────────────────────────────────────────────────────────
 
 export function getPos(e) {
     const rect   = state.canvas.getBoundingClientRect();
@@ -144,9 +131,9 @@ export function getPos(e) {
     };
 }
 
-// ─── Pen / Eraser state ───────────────────────────────────────────────────────
+// ─── Pen / Eraser ─────────────────────────────────────────────────────────────
 
-let p_x = 0, p_y = 0; // previous position for pen strokes
+let p_x = 0, p_y = 0;
 
 // ─── Event handlers ───────────────────────────────────────────────────────────
 
@@ -154,19 +141,14 @@ export function onDown(e) {
     e.preventDefault();
     const pos = getPos(e);
 
-    if (state.tool === "text") {
-        showTextInput(pos.x, pos.y);
-        return;
-    }
+    if (state.tool === "text") { showTextInput(pos.x, pos.y); return; }
 
     state.isDrawing = true;
-    startX = pos.x;
-    startY = pos.y;
-    p_x    = pos.x;
-    p_y    = pos.y;
+    startX = p_x = pos.x;
+    startY = p_y = pos.y;
 
     if (state.tool === "pen" || state.tool === "eraser") {
-        pushUndo(); // snapshot before stroke begins
+        pushUndo();
         const sbk = state.sbk;
         if (state.tool === "eraser") {
             sbk.globalCompositeOperation = "destination-out";
@@ -196,10 +178,8 @@ export function onMove(e) {
         return;
     }
 
-    // Shape preview on ghost canvas
     gctx.clearRect(0, 0, ghost.width, ghost.height);
     applyStyle(gctx);
-
     const dx = pos.x - startX;
     const dy = pos.y - startY;
 
@@ -211,12 +191,9 @@ export function onMove(e) {
     } else if (state.tool === "rect") {
         gctx.strokeRect(startX, startY, dx, dy);
     } else if (state.tool === "circle") {
-        const rx = Math.abs(dx) / 2;
-        const ry = Math.abs(dy) / 2;
-        const cx = startX + dx / 2;
-        const cy = startY + dy / 2;
         gctx.beginPath();
-        gctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        gctx.ellipse(startX + dx / 2, startY + dy / 2,
+                     Math.abs(dx) / 2, Math.abs(dy) / 2, 0, 0, Math.PI * 2);
         gctx.stroke();
     }
 }
@@ -226,12 +203,10 @@ export function onUp(e) {
     state.isDrawing = false;
 
     if (state.tool === "pen" || state.tool === "eraser") {
-        // Stroke already committed incrementally — restore composite op
         state.sbk.globalCompositeOperation = "source-over";
         return;
     }
 
-    // Commit shape from ghost to main canvas
     const pos = getPos(e);
     const dx  = pos.x - startX;
     const dy  = pos.y - startY;
@@ -247,16 +222,12 @@ export function onUp(e) {
     } else if (state.tool === "rect") {
         state.sbk.strokeRect(startX, startY, dx, dy);
     } else if (state.tool === "circle") {
-        const rx = Math.abs(dx) / 2;
-        const ry = Math.abs(dy) / 2;
-        const cx = startX + dx / 2;
-        const cy = startY + dy / 2;
         state.sbk.beginPath();
-        state.sbk.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        state.sbk.ellipse(startX + dx / 2, startY + dy / 2,
+                          Math.abs(dx) / 2, Math.abs(dy) / 2, 0, 0, Math.PI * 2);
         state.sbk.stroke();
     }
 
-    // Clear ghost overlay
     gctx.clearRect(0, 0, ghost.width, ghost.height);
 }
 
@@ -267,8 +238,4 @@ export function onLeave() {
     }
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
-
-export function initTools() {
-    initGhost();
-}
+export function initTools() { initGhost(); }

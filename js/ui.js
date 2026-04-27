@@ -1,26 +1,47 @@
-// js/ui.js
-// Toolbar wiring: colour palette, tool buttons, line width, status badges.
+// js/ui.js — toolbar wiring, colour palette, line width, status badges.
 
 import { state, BG_COLOR } from "./state.js";
 import { clearUndo } from "./undo.js";
 
+const $ = window.$;
+
 // ─── Colour palette ───────────────────────────────────────────────────────────
 
 export function initColorPalette() {
-    const container = document.getElementById("sbk_color");
-    if (!container) return;
-    const buttons = container.getElementsByClassName("color-swatch");
-    if (buttons.length > 0) buttons[0].classList.add("active");
+    const $swatches = $("#sbk_color .color-swatch:not(.color-swatch-picker)");
+    $swatches.first().addClass("active");
 
-    Array.from(buttons).forEach(function (btn) {
-        const clr = btn.dataset.clr;
-        btn.style.backgroundColor = clr;
-        btn.addEventListener("click", function () {
-            Array.from(document.getElementsByClassName("color-swatch"))
-                 .forEach(function (b) { b.classList.remove("active"); });
-            btn.classList.add("active");
+    // Static swatches
+    $swatches.each(function () {
+        const $btn = $(this);
+        const clr  = $btn.data("clr");
+        $btn.css("background-color", clr);
+        $btn.on("click", function () {
+            $(".color-swatch").removeClass("active");
+            $btn.addClass("active");
             setColor(clr);
         });
+    });
+
+    // Custom colour picker
+    const $pickerLabel = $(".color-swatch-picker");
+    const $picker      = $("#color_picker");
+
+    // Sync picker background to its current value on init
+    $pickerLabel.css("background-color", $picker.val());
+
+    $picker.on("input change", function () {
+        const clr = $picker.val();
+        $pickerLabel.css("background-color", clr);
+        $(".color-swatch").removeClass("active");
+        $pickerLabel.addClass("active");
+        setColor(clr);
+    });
+
+    // Clicking the label activates it visually even before the picker opens
+    $pickerLabel.on("click", function () {
+        $(".color-swatch").removeClass("active");
+        $pickerLabel.addClass("active");
     });
 }
 
@@ -37,82 +58,73 @@ export function setTool(name) {
         pen: "crosshair", eraser: "cell",
         line: "crosshair", rect: "crosshair", circle: "crosshair", text: "text",
     };
-    state.canvas.style.cursor = cursors[name] || "crosshair";
-    document.querySelectorAll(".tool-btn").forEach(function (btn) {
-        btn.classList.toggle("active", btn.dataset.tool === name);
+    $(state.canvas).css("cursor", cursors[name] || "crosshair");
+    $(".tool-btn").each(function () {
+        $(this).toggleClass("active", $(this).data("tool") === name);
     });
 }
 
 export function initToolButtons() {
-    document.querySelectorAll(".tool-btn").forEach(function (btn) {
-        btn.addEventListener("click", function () { setTool(btn.dataset.tool); });
+    $(".tool-btn").on("click", function () {
+        setTool($(this).data("tool"));
     });
 }
 
 // ─── Line width — hover-reveal popover (body-level, JS-positioned) ───────────
 
 export function initLineWidth() {
-    const slider   = document.getElementById("line_width");
-    const label    = document.getElementById("line_width_val");
-    const preview  = document.getElementById("line_width_preview");
-    const trigger  = document.getElementById("lw_trigger_btn");
-    const popover  = document.getElementById("lw_popover");
-    if (!slider || !trigger || !popover) return;
+    const $slider  = $("#line_width");
+    const $label   = $("#line_width_val");
+    const $preview = $("#line_width_preview");
+    const $trigger = $("#lw_trigger_btn");
+    const $popover = $("#lw_popover");
+    if (!$slider.length || !$trigger.length || !$popover.length) return;
 
-    // Position popover to the right of the trigger button
     function positionPopover() {
-        const r = trigger.getBoundingClientRect();
-        popover.style.left = (r.right + 6) + "px";
-        popover.style.top  = (r.top + r.height / 2 - popover.offsetHeight / 2) + "px";
+        const r = $trigger[0].getBoundingClientRect();
+        $popover.css({
+            left: r.right + 6,
+            top:  r.top + r.height / 2 - $popover.outerHeight() / 2,
+        });
     }
 
     function showPopover() {
         positionPopover();
-        popover.classList.add("visible");
+        $popover.addClass("visible");
     }
 
     function hidePopover() {
-        popover.classList.remove("visible");
+        $popover.removeClass("visible");
     }
 
-    // Show on trigger hover/focus
-    trigger.addEventListener("mouseenter", showPopover);
-    trigger.addEventListener("focus",      showPopover);
+    $trigger.on("mouseenter focus", showPopover);
+    $popover.on("mouseenter", showPopover);
 
-    // Keep visible while hovering the popover itself
-    popover.addEventListener("mouseenter", showPopover);
-
-    // Hide when leaving both
-    trigger.addEventListener("mouseleave", function () {
-        // Small delay so mouse can travel to popover without it vanishing
+    $trigger.on("mouseleave", function () {
         setTimeout(function () {
-            if (!popover.matches(":hover") && !trigger.matches(":hover")) hidePopover();
+            if (!$popover.is(":hover") && !$trigger.is(":hover")) hidePopover();
         }, 80);
     });
-    popover.addEventListener("mouseleave", function () {
+    $popover.on("mouseleave", function () {
         setTimeout(function () {
-            if (!popover.matches(":hover") && !trigger.matches(":hover")) hidePopover();
+            if (!$popover.is(":hover") && !$trigger.is(":hover")) hidePopover();
         }, 80);
     });
-    trigger.addEventListener("blur", function () {
+    $trigger.on("blur", function () {
         setTimeout(function () {
-            if (!popover.contains(document.activeElement)) hidePopover();
+            if (!$.contains($popover[0], document.activeElement)) hidePopover();
         }, 100);
     });
 
     function sync() {
-        state.lineWidth = parseInt(slider.value, 10);
-        if (label)   label.textContent = state.lineWidth + "px";
-        if (preview) {
-            const size = Math.max(state.lineWidth, 2);
-            preview.style.width  = size + "px";
-            preview.style.height = size + "px";
-        }
-        // Re-position in case popover height changed
+        state.lineWidth = parseInt($slider.val(), 10);
+        $label.text(state.lineWidth + "px");
+        const size = Math.max(state.lineWidth, 2);
+        $preview.css({ width: size, height: size });
         positionPopover();
     }
 
-    slider.addEventListener("input", sync);
+    $slider.on("input", sync);
     sync();
 }
 
@@ -124,22 +136,20 @@ export function resetCanvas() {
     state.sbk.fillStyle = BG_COLOR;
     state.sbk.fillRect(0, 0, state.canvas.width, state.canvas.height);
     setTool("pen");
+    // Reset to white (first swatch)
     state.color = "#ffffff";
-    const swatches = document.getElementsByClassName("color-swatch");
-    Array.from(swatches).forEach(function (b) { b.classList.remove("active"); });
-    if (swatches.length > 0) swatches[0].classList.add("active");
+    $(".color-swatch").removeClass("active");
+    $("#sbk_color .color-swatch:not(.color-swatch-picker)").first().addClass("active");
 }
 
 // ─── Status badges ────────────────────────────────────────────────────────────
 
 export function updateDrawingBadge(isDrawing) {
-    const badge = document.getElementById("badge_drawing");
-    if (!badge) return;
-    badge.textContent = isDrawing ? "Melukis" : "Tidak Melukis";
-    badge.classList.toggle("drawing", isDrawing);
+    $("#badge_drawing")
+        .text(isDrawing ? "Melukis" : "Tidak Melukis")
+        .toggleClass("drawing", isDrawing);
 }
 
 export function updateOrdinat(x, y) {
-    const el = document.getElementById("sbk_ordinat");
-    if (el) el.textContent = "X: " + Math.round(x) + "  Y: " + Math.round(y);
+    $("#sbk_ordinat").text("X: " + Math.round(x) + "  Y: " + Math.round(y));
 }

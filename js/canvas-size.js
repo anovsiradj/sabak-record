@@ -1,9 +1,9 @@
-// js/canvas-size.js
-// Canvas size presets — all relative to the available canvas wrapper area.
-// Each preset is defined as [label, wRatio, hRatio].
+// js/canvas-size.js — canvas size presets, all relative to the wrapper area.
 
 import { state, BG_COLOR } from "./state.js";
 import { clearUndo } from "./undo.js";
+
+const $ = window.$;
 
 export const PRESETS = [
     ["16:9",  16,  9],
@@ -15,32 +15,19 @@ export const PRESETS = [
     ["2:3",    2,  3],
 ];
 
-/**
- * Return the stable pixel dimensions of the canvas wrapper.
- * The wrapper has a fixed CSS height (100dvh - header), so its
- * clientWidth/clientHeight are stable regardless of gallery content below.
- */
 function getWrapperSize() {
-    const wrapper = document.getElementById("canvas_wrapper");
-    if (!wrapper) return { w: 800, h: 450 };
+    const $w = $("#canvas_wrapper");
     return {
-        w: Math.max(wrapper.clientWidth,  200),
-        h: Math.max(wrapper.clientHeight, 200),
+        w: Math.max($w.width()  || 800, 200),
+        h: Math.max($w.height() || 450, 200),
     };
 }
 
-/**
- * Compute the largest canvas that fits inside the wrapper
- * at the given aspect ratio (wr : hr).
- */
 function fitToWrapper(wr, hr) {
     const { w, h } = getWrapperSize();
     let cw = w;
     let ch = Math.round(cw * hr / wr);
-    if (ch > h) {
-        ch = h;
-        cw = Math.round(ch * wr / hr);
-    }
+    if (ch > h) { ch = h; cw = Math.round(ch * wr / hr); }
     return { w: Math.max(cw, 100), h: Math.max(ch, 100) };
 }
 
@@ -50,7 +37,7 @@ function resizeCanvas(newW, newH) {
     state.canvas.width  = newW;
     state.canvas.height = newH;
 
-    const ghost = document.getElementById("ghost");
+    const ghost = $("#ghost")[0];
     if (ghost) { ghost.width = newW; ghost.height = newH; }
 
     state.sbk.fillStyle = BG_COLOR;
@@ -76,24 +63,15 @@ export function applyPreset(label) {
 }
 
 function reapplyCurrent() {
-    const sel = document.getElementById("canvas_size_select");
-    const val = sel ? sel.value : "default";
-    if (val === "default") {
-        setDefaultSize();
-    } else {
-        applyPreset(val);
-    }
+    const val = $("#canvas_size_select").val() || "default";
+    if (val === "default") setDefaultSize();
+    else applyPreset(val);
 }
 
 export function initCanvasSize() {
-    const sel = document.getElementById("canvas_size_select");
-    if (sel) {
-        sel.addEventListener("change", reapplyCurrent);
-    }
+    $("#canvas_size_select").on("change", reapplyCurrent);
 
-    // Defer one frame so the wrapper has its final CSS dimensions
     requestAnimationFrame(setDefaultSize);
 
-    // Re-fit on window resize — wrapper height is fixed so this is safe
-    window.addEventListener("resize", reapplyCurrent);
+    $(window).on("resize", reapplyCurrent);
 }

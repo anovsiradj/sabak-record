@@ -20,8 +20,8 @@
 
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23222'/%3E%3Crect x='6' y='8' width='52' height='36' rx='4' fill='%23111' stroke='%23555' stroke-width='2'/%3E%3Cpath d='M14 36 Q22 18 30 28 Q38 38 46 16' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='20' y='48' width='24' height='6' rx='2' fill='%23888'/%3E%3Crect x='29' y='44' width='6' height='5' rx='1' fill='%23888'/%3E%3C/svg%3E" />
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="canvs.css" />
 </head>
 
@@ -139,16 +139,22 @@
 
             <!-- Colour palette -->
             <div class="sidebar-group" id="sbk_color" role="group" aria-label="Pilih warna">
+                <!-- Mejikuhibiniu -->
+                <button class="color-swatch" data-clr="#e53935" title="Merah"></button>
+                <button class="color-swatch" data-clr="#fb8c00" title="Jingga"></button>
+                <button class="color-swatch" data-clr="#fdd835" title="Kuning"></button>
+                <button class="color-swatch" data-clr="#43a047" title="Hijau"></button>
+                <button class="color-swatch" data-clr="#1e88e5" title="Biru"></button>
+                <button class="color-swatch" data-clr="#3949ab" title="Nila"></button>
+                <button class="color-swatch" data-clr="#8e24aa" title="Ungu"></button>
+                <!-- Neutral -->
                 <button class="color-swatch" data-clr="#ffffff" title="Putih"></button>
-                <button class="color-swatch" data-clr="#facc15" title="Kuning"></button>
-                <button class="color-swatch" data-clr="#f472b6" title="Pink"></button>
-                <button class="color-swatch" data-clr="#4ade80" title="Hijau"></button>
-                <button class="color-swatch" data-clr="#38bdf8" title="Biru"></button>
-                <button class="color-swatch" data-clr="#f87171" title="Merah"></button>
-                <button class="color-swatch" data-clr="#fb923c" title="Oranye"></button>
-                <button class="color-swatch" data-clr="#a78bfa" title="Ungu"></button>
-                <button class="color-swatch" data-clr="#34d399" title="Hijau Muda"></button>
-                <button class="color-swatch" data-clr="#94a3b8" title="Abu-abu"></button>
+                <button class="color-swatch" data-clr="#212121" title="Hitam"></button>
+                <!-- Custom colour picker -->
+                <label class="color-swatch color-swatch-picker" title="Warna kustom">
+                    <i class="bi bi-eyedropper"></i>
+                    <input type="color" id="color_picker" value="#ffffff" tabindex="-1" />
+                </label>
             </div>
 
         </aside>
@@ -240,7 +246,8 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@4.0.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script type="module" src="canvs.js"></script>
 
     <!-- Line-width popover — appended to body to escape overflow containers -->
