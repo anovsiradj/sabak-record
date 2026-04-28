@@ -1,7 +1,8 @@
 // js/ui.js — toolbar wiring, colour palette, line width, status badges.
 
 import { state, BG_COLOR } from "./state.js";
-import { clearUndo } from "./undo.js";
+import { clearUndo } from "./memo.js";
+import { clearCanvas } from "./canvas.js";
 
 const $ = window.$;
 
@@ -14,7 +15,7 @@ export function initColorPalette() {
     // Static swatches
     $swatches.each(function () {
         const $btn = $(this);
-        const clr  = $btn.data("clr");
+        const clr = $btn.data("clr");
         $btn.css("background-color", clr);
         $btn.on("click", function () {
             $(".color-swatch").removeClass("active");
@@ -25,7 +26,7 @@ export function initColorPalette() {
 
     // Custom colour picker
     const $pickerLabel = $(".color-swatch-picker");
-    const $picker      = $("#color_picker");
+    const $picker = $("#color_picker");
 
     // Sync picker background to its current value on init
     $pickerLabel.css("background-color", $picker.val());
@@ -73,8 +74,8 @@ export function initToolButtons() {
 // ─── Line width — hover-reveal popover (body-level, JS-positioned) ───────────
 
 export function initLineWidth() {
-    const $slider  = $("#line_width");
-    const $label   = $("#line_width_val");
+    const $slider = $("#line_width");
+    const $label = $("#line_width_val");
     const $preview = $("#line_width_preview");
     const $trigger = $("#lw_trigger_btn");
     const $popover = $("#lw_popover");
@@ -84,7 +85,7 @@ export function initLineWidth() {
         const r = $trigger[0].getBoundingClientRect();
         $popover.css({
             left: r.right + 6,
-            top:  r.top + r.height / 2 - $popover.outerHeight() / 2,
+            top: r.top + r.height / 2 - $popover.outerHeight() / 2,
         });
     }
 
@@ -132,11 +133,8 @@ export function initLineWidth() {
 
 export function resetCanvas() {
     clearUndo();
-    state.sbk.globalCompositeOperation = "source-over";
-    state.sbk.fillStyle = BG_COLOR;
-    state.sbk.fillRect(0, 0, state.canvas.width, state.canvas.height);
+    clearCanvas();
     setTool("pen");
-    // Reset to white (first swatch)
     state.color = "#ffffff";
     $(".color-swatch").removeClass("active");
     $("#sbk_color .color-swatch:not(.color-swatch-picker)").first().addClass("active");

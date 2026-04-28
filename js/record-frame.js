@@ -4,13 +4,13 @@
 
 import { state } from "./state.js";
 
-const FPS = 10;
+const FPS = 8;
 
-let frames      = [];
-let frameCount  = 0;
+let frames = [];
+let frameCount = 0;
 let captureTimer = null;
-let playTimer    = null;
-let recording    = false;
+let playTimer = null;
+let recording = false;
 
 function capture() {
     frames.push(state.canvas.toDataURL("image/webp", 0.85));
@@ -24,9 +24,9 @@ function stopPlay() {
 
 export function start() {
     stopPlay();
-    frames     = [];
+    frames = [];
     frameCount = 0;
-    recording  = true;
+    recording = true;
     captureTimer = setInterval(capture, 1000 / FPS);
 }
 
@@ -34,8 +34,8 @@ export function stop() {
     if (!recording) return;
     clearInterval(captureTimer);
     captureTimer = null;
-    recording    = false;
-    frameCount   = frames.length;
+    recording = false;
+    frameCount = frames.length;
 }
 
 /** Play back into an <img> element. */
@@ -45,7 +45,7 @@ export function play(imgEl) {
     let i = 0;
     playTimer = setInterval(function () {
         if (i < frameCount) { imgEl.src = frames[i++]; }
-        else                { stopPlay(); }
+        else { stopPlay(); }
     }, 1000 / FPS);
 }
 
@@ -58,4 +58,4 @@ export function getLastFrame() {
 export function getFrames() { return frames.slice(); }
 
 export function isRecording() { return recording; }
-export function hasFrames()   { return frameCount > 0; }
+export function hasFrames() { return frameCount > 0; }

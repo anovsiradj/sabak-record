@@ -2,16 +2,22 @@
    RESET & ROOT
 ═══════════════════════════════════════════════════════════════ */
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
 :root {
-    --header-h:   44px;
-    --sidebar-w:  48px;
-    --bg:         #111;
-    --surface:    #1a1a1a;
-    --border:     #2e2e2e;
+    --header-h: 44px;
+    --sidebar-w: 48px;
+    --bg: #111;
+    --surface: #1a1a1a;
+    --border: #2e2e2e;
     --text-muted: #666;
-    --accent:     #0d6efd;
+    --accent: #0d6efd;
 }
 
 body.sabak-app {
@@ -77,11 +83,35 @@ body.sabak-app {
     transition: background 0.1s, border-color 0.1s, color 0.1s;
 }
 
-.hbtn:hover          { background: #2a2a2a; border-color: var(--border); color: #fff; }
-.hbtn-danger:hover   { background: #3b1010; border-color: #7f1d1d; color: #f87171; }
-.hbtn-primary:hover  { background: #0d2a5e; border-color: #1d4ed8; color: #93c5fd; }
-.hbtn-success:hover  { background: #0d3b1e; border-color: #166534; color: #86efac; }
-.hbtn-warning:hover  { background: #3b2a00; border-color: #854d0e; color: #fde68a; }
+.hbtn:hover {
+    background: #2a2a2a;
+    border-color: var(--border);
+    color: #fff;
+}
+
+.hbtn-danger:hover {
+    background: #3b1010;
+    border-color: #7f1d1d;
+    color: #f87171;
+}
+
+.hbtn-primary:hover {
+    background: #0d2a5e;
+    border-color: #1d4ed8;
+    color: #93c5fd;
+}
+
+.hbtn-success:hover {
+    background: #0d3b1e;
+    border-color: #166534;
+    color: #86efac;
+}
+
+.hbtn-warning:hover {
+    background: #3b2a00;
+    border-color: #854d0e;
+    color: #fde68a;
+}
 
 .hbtn-sep {
     width: 1px;
@@ -122,7 +152,11 @@ body.sabak-app {
     white-space: nowrap;
 }
 
-.sbadge.drawing   { background: var(--accent); color: #fff; }
+.sbadge.drawing {
+    background: var(--accent);
+    color: #fff;
+}
+
 .sbadge.recording {
     background: #dc3545;
     color: #fff;
@@ -130,8 +164,15 @@ body.sabak-app {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -141,7 +182,8 @@ body.sabak-app {
 .sabak-body {
     display: flex;
     flex: 1;
-    min-height: 0; /* allow flex children to shrink below content size */
+    min-height: 0;
+    /* allow flex children to shrink below content size */
     /* No overflow here — workspace handles its own scroll */
 }
 
@@ -221,7 +263,9 @@ body.sabak-app {
     flex-shrink: 0;
 }
 
-.color-swatch:hover  { transform: scale(1.2); }
+.color-swatch:hover {
+    transform: scale(1.2);
+}
 
 .color-swatch.active {
     border-color: #fff;
@@ -242,9 +286,9 @@ body.sabak-app {
         0 0 2px #000,
         0 0 4px #000,
         1px 1px 0 #000,
-       -1px -1px 0 #000,
+        -1px -1px 0 #000,
         1px -1px 0 #000,
-       -1px  1px 0 #000;
+        -1px 1px 0 #000;
     background-color: #555;
     position: relative;
     overflow: hidden;
@@ -304,7 +348,7 @@ body.sabak-app {
     pointer-events: none;
     transition: opacity 0.15s ease;
     z-index: 9999;
-    box-shadow: 4px 4px 12px rgba(0,0,0,0.6);
+    box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.6);
 }
 
 .lw-popover.visible {
@@ -346,7 +390,7 @@ body.sabak-app {
     pointer-events: none;
     transition: opacity 0.15s ease;
     z-index: 9999;
-    box-shadow: 4px 4px 12px rgba(0,0,0,0.6);
+    box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.6);
 }
 
 .text-popover.visible {
@@ -400,8 +444,11 @@ body.sabak-app {
     /* Hide spin buttons */
     -moz-appearance: textfield;
 }
+
 .tp-size::-webkit-inner-spin-button,
-.tp-size::-webkit-outer-spin-button { -webkit-appearance: none; }
+.tp-size::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    WORKSPACE
@@ -445,23 +492,24 @@ body.sabak-app {
    Isolated stacking context so it never traps header/sidebar popups. */
 .canvas-inner {
     position: relative;
-    display: inline-block; /* shrink-wraps the canvas */
+    display: inline-block;
+    /* shrink-wraps the canvas */
     line-height: 0;
     z-index: 0;
 }
 
 /* Text input overlay */
 #text_input_overlay {
-    position:   fixed;
-    min-width:  120px;
+    position: fixed;
+    min-width: 120px;
     background: rgba(0, 0, 0, 0.75);
     border-radius: 0;
-    padding:    0 !important;
-    margin:     0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
     line-height: 1.4;
-    resize:     both;
-    z-index:    100;
-    outline:    none;
+    resize: both;
+    z-index: 100;
+    outline: none;
     box-sizing: content-box;
     /* color, font-size, font-family, border, left, top set by JS */
 }
@@ -526,7 +574,9 @@ body.sabak-app {
     transition: border-color 0.15s;
 }
 
-.gallery-item:hover { border-color: #555; }
+.gallery-item:hover {
+    border-color: #555;
+}
 
 .gallery-thumb {
     width: 100%;
@@ -547,9 +597,14 @@ body.sabak-app {
     transition: opacity 0.15s;
 }
 
-.gallery-thumb:hover img { opacity: 0.85; }
+.gallery-thumb:hover img {
+    opacity: 0.85;
+}
 
-.gallery-video-icon { font-size: 2rem; color: #555; }
+.gallery-video-icon {
+    font-size: 2rem;
+    color: #555;
+}
 
 .gallery-footer {
     padding: 0.25rem 0.4rem 0.1rem;
@@ -583,10 +638,12 @@ body.sabak-app {
     background: #000;
 }
 
-#galleryCarousel .carousel-item { background: #000; }
+#galleryCarousel .carousel-item {
+    background: #000;
+}
 
 #galleryCarousel .carousel-caption {
-    background: rgba(0,0,0,0.55);
+    background: rgba(0, 0, 0, 0.55);
     border-radius: 4px;
     padding: 0.25rem 0.6rem;
     bottom: 1.25rem;

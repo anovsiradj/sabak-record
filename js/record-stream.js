@@ -4,14 +4,14 @@
 
 import { state } from "./state.js";
 
-const FPS        = 25;
+const FPS = 24;
 const MIME_TYPES = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
 
 let mediaRecorder = null;
-let chunks        = [];
-let blob          = null;
-let recording     = false;
-let _onStop       = null; // callback(blob) when recording finishes
+let chunks = [];
+let blob = null;
+let recording = false;
+let _onStop = null; // callback(blob) when recording finishes
 
 function pickMime() {
     return MIME_TYPES.find(function (m) { return MediaRecorder.isTypeSupported(m); }) || "";
@@ -29,12 +29,12 @@ export function start() {
         console.warn("record-stream: MediaRecorder not supported, falling back.");
         return false;
     }
-    chunks    = [];
-    blob      = null;
+    chunks = [];
+    blob = null;
     recording = true;
 
     const stream = state.canvas.captureStream(FPS);
-    const opts   = pickMime() ? { mimeType: pickMime() } : {};
+    const opts = pickMime() ? { mimeType: pickMime() } : {};
     mediaRecorder = new MediaRecorder(stream, opts);
 
     mediaRecorder.ondataavailable = function (e) {
@@ -42,7 +42,7 @@ export function start() {
     };
 
     mediaRecorder.onstop = function () {
-        blob      = new Blob(chunks, { type: mediaRecorder.mimeType || "video/webm" });
+        blob = new Blob(chunks, { type: mediaRecorder.mimeType || "video/webm" });
         recording = false;
         if (_onStop) { _onStop(blob); _onStop = null; }
     };

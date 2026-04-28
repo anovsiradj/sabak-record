@@ -4,7 +4,7 @@ import { state } from "./state.js";
 
 const $ = window.$;
 
-let items  = [];
+let items = [];
 let nextId = 1;
 
 // ─── Thumbnail helpers ────────────────────────────────────────────────────────
@@ -12,9 +12,9 @@ let nextId = 1;
 function makeThumb(dataURL, cb) {
     const img = new Image();
     img.onload = function () {
-        const c   = document.createElement("canvas");
-        c.width   = 160;
-        c.height  = 90;
+        const c = document.createElement("canvas");
+        c.width = 160;
+        c.height = 90;
         c.getContext("2d").drawImage(img, 0, 0, 160, 90);
         cb(c.toDataURL("image/webp", 0.7));
     };
@@ -36,15 +36,15 @@ export function addToGallery(item) {
         $("#gallery_section")[0].scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
-    if (item.type === "image")        makeThumb(item.src, finish);
-    else if (item.type === "frames")  makeFramesThumb(item.frames, finish);
-    else                              finish(null);
+    if (item.type === "image") makeThumb(item.src, finish);
+    else if (item.type === "frames") makeFramesThumb(item.frames, finish);
+    else finish(null);
 }
 
 export function captureToGallery() {
     addToGallery({
-        type:  "image",
-        src:   state.canvas.toDataURL("image/webp", 0.92),
+        type: "image",
+        src: state.canvas.toDataURL("image/webp", 0.92),
         label: "Tangkapan",
     });
 }
@@ -65,9 +65,9 @@ export function renderGallery() {
     $("#gallery_empty").addClass("d-none");
 
     items.forEach(function (item, idx) {
-        const typeIcon = item.type === "video"  ? "bi-camera-video"
-                       : item.type === "frames" ? "bi-film"
-                       :                          "bi-image";
+        const typeIcon = item.type === "video" ? "bi-camera-video"
+            : item.type === "frames" ? "bi-film"
+                : "bi-image";
 
         // Thumbnail content
         let thumbHtml;
@@ -134,7 +134,7 @@ function deleteItem(id) {
 
 // ─── Lightbox ─────────────────────────────────────────────────────────────────
 
-let lightboxModal  = null;
+let lightboxModal = null;
 let framePlayTimer = null;
 
 function stopFramePlay() {
@@ -155,7 +155,7 @@ export function openLightbox(startIdx) {
 }
 
 function buildCarousel(activeIdx) {
-    const $inner      = $("#galleryCarouselInner").empty();
+    const $inner = $("#galleryCarouselInner").empty();
     const $indicators = $("#galleryCarouselIndicators").empty();
     if (!$inner.length) return;
 
@@ -164,10 +164,10 @@ function buildCarousel(activeIdx) {
 
         // Indicator dot
         const $dot = $("<button>").attr({
-            type:              "button",
-            "data-bs-target":  "#galleryCarousel",
+            type: "button",
+            "data-bs-target": "#galleryCarousel",
             "data-bs-slide-to": idx,
-            "aria-label":      "Slide " + (idx + 1),
+            "aria-label": "Slide " + (idx + 1),
         });
         if (isActive) $dot.addClass("active").attr("aria-current", "true");
         $indicators.append($dot);
@@ -196,9 +196,9 @@ function buildCarousel(activeIdx) {
             );
         }
 
-        const typeLabel = item.type === "video"  ? "Video"
-                        : item.type === "frames" ? "Rekaman Frame"
-                        :                          "Gambar";
+        const typeLabel = item.type === "video" ? "Video"
+            : item.type === "frames" ? "Rekaman Frame"
+                : "Gambar";
         $slide.append(
             $("<div>").addClass("carousel-caption d-none d-md-block").html(
                 `<small class="text-secondary">${typeLabel}</small><br/><span>${item.label}</span>`
@@ -210,7 +210,7 @@ function buildCarousel(activeIdx) {
 
     const $carousel = $("#galleryCarousel");
     $carousel.off("slid.bs.carousel", onCarouselSlid)
-             .on("slid.bs.carousel",  onCarouselSlid);
+        .on("slid.bs.carousel", onCarouselSlid);
 
     updateCarouselArrows(activeIdx);
 
