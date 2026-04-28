@@ -1,9 +1,7 @@
 // js/text.js — text tool overlay + font-face/size picker popover.
-// Merges tools.js text logic and font-picker.js.
 
 import { state } from "./state.js";
 import { pushUndo } from "./memo.js";
-import { getPos } from "./draw.js";
 
 const $ = window.$;
 
@@ -26,7 +24,7 @@ export function showTextInput(x, y) {
     const screenY = rect.top  + y * scaleY;
 
     $textInput = $("<textarea>")
-        .attr({ id: "text_input_overlay", rows: 2, placeholder: "Ketik teks…" })
+        .attr({ id: "text_input_overlay", rows: 1, placeholder: "Ketik teks…" })
         .css({
             left:       screenX,
             top:        screenY - TEXT_MAGIC_NUMBER,
@@ -34,6 +32,14 @@ export function showTextInput(x, y) {
             border:     "1px dashed " + state.color,
             fontSize:   state.fontSize + "px",
             fontFamily: state.fontFace,
+            // Auto-resize: height driven by scrollHeight, not manual drag
+            resize:     "none",
+            overflow:   "hidden",
+        })
+        .on("input", function () {
+            // Collapse to auto first so shrinking works, then expand to content
+            this.style.height = "auto";
+            this.style.height = this.scrollHeight + "px";
         })
         .on("keydown", function (e) {
             if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commitText(x, y); }
@@ -42,7 +48,12 @@ export function showTextInput(x, y) {
         .on("blur", function () { commitText(x, y); });
 
     $("body").append($textInput);
-    $textInput[0].focus();
+
+    // Set initial height to one line
+    const el = $textInput[0];
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+    el.focus();
 }
 
 function commitText(x, y) {
@@ -59,7 +70,7 @@ function commitText(x, y) {
     sbk.fillStyle    = state.color;
     sbk.font         = state.fontSize + "px " + state.fontFace;
     sbk.textBaseline = "top";
-    text.split("\n").forEach(function (line, i) {
+    text.split(/\r?\n/).forEach(function (line, i) {
         sbk.fillText(line, x, y + i * lineH);
     });
     sbk.textBaseline = "alphabetic";

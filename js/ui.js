@@ -1,6 +1,6 @@
 // js/ui.js — toolbar wiring, colour palette, line width, status badges.
 
-import { state, BG_COLOR } from "./state.js";
+import { state } from "./state.js";
 import { clearUndo } from "./memo.js";
 import { clearCanvas } from "./canvas.js";
 
@@ -141,12 +141,6 @@ export function resetCanvas() {
 }
 
 // ─── Status badges ────────────────────────────────────────────────────────────
-
-export function updateDrawingBadge(isDrawing) {
-    $("#badge_drawing")
-        .text(isDrawing ? "Melukis" : "Tidak Melukis")
-        .toggleClass("drawing", isDrawing);
-}
 
 export function updateOrdinat(x, y) {
     $("#sbk_ordinat").text("X: " + Math.round(x) + "  Y: " + Math.round(y));

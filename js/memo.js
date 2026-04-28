@@ -5,7 +5,7 @@ import { state, BG_COLOR } from "./state.js";
 
 const $ = window.$;
 
-const MAX = 30;
+const MAX = 10;
 const undoStack = [];
 const redoStack = [];
 

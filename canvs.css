@@ -133,7 +133,7 @@ body.sabak-app {
     /* Use system select appearance so it renders above everything natively */
 }
 
-/* ── Status badges ──────────────────────────────────────────── */
+/* ── Status area ────────────────────────────────────────────── */
 
 .sabak-header-status {
     display: flex;
@@ -141,38 +141,6 @@ body.sabak-app {
     gap: 0.4rem;
     margin-left: auto;
     flex-shrink: 0;
-}
-
-.sbadge {
-    font-size: 0.7rem;
-    padding: 0.15rem 0.45rem;
-    border-radius: 999px;
-    background: #2a2a2a;
-    color: #888;
-    white-space: nowrap;
-}
-
-.sbadge.drawing {
-    background: var(--accent);
-    color: #fff;
-}
-
-.sbadge.recording {
-    background: #dc3545;
-    color: #fff;
-    animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.5;
-    }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -507,7 +475,8 @@ body.sabak-app {
     padding: 0 !important;
     margin: 0 !important;
     line-height: 1.4;
-    resize: both;
+    resize: none;     /* auto-resizes via JS scrollHeight */
+    overflow: hidden;
     z-index: 100;
     outline: none;
     box-sizing: content-box;

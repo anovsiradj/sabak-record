@@ -1,7 +1,7 @@
 // js/draw.js — pen, eraser, and shape tools (line, rect, circle).
 // Ghost canvas provides live shape preview without dirtying the main canvas.
 
-import { state } from "./state.js";
+import { state, BG_COLOR } from "./state.js";
 import { pushUndo } from "./memo.js";
 
 const $ = window.$;
@@ -68,8 +68,9 @@ export function onDown(e) {
         pushUndo();
         const sbk = state.sbk;
         if (state.tool === "eraser") {
-            sbk.globalCompositeOperation = "destination-out";
-            sbk.strokeStyle = "rgba(0,0,0,1)";
+            // Paint BG_COLOR so eraser works correctly on any background
+            sbk.globalCompositeOperation = "source-over";
+            sbk.strokeStyle = BG_COLOR;
             sbk.lineWidth   = state.lineWidth * 4;
         } else {
             applyStyle(sbk);

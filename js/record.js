@@ -1,6 +1,5 @@
 // js/record.js — recording coordinator + inline playback preview.
 
-
 import { state } from "./state.js";
 import * as frame  from "./record-frame.js";
 import * as stream from "./record-stream.js";
@@ -8,12 +7,27 @@ import { addToGallery } from "./gallery.js";
 
 const $ = window.$;
 
-// ─── Badge ────────────────────────────────────────────────────────────────────
+let _recording = false;
 
-function setBadge(active) {
-    $("#badge_record")
-        .text(active ? "Merekam…" : "Tidak Merekam")
-        .toggleClass("recording", active);
+// ─── Record toggle button state ───────────────────────────────────────────────
+
+function setRecordBtn(active) {
+    _recording = active;
+    const $btn   = $("#btn_record_toggle");
+    const $icon  = $("#btn_record_icon");
+    const $label = $("#btn_record_label");
+
+    if (active) {
+        $btn.removeClass("hbtn-success").addClass("hbtn-warning");
+        $icon.removeClass("bi-record-circle").addClass("bi-stop-circle");
+        $label.text("Stop");
+        $btn.attr("title", "Berhenti rekam");
+    } else {
+        $btn.removeClass("hbtn-warning").addClass("hbtn-success");
+        $icon.removeClass("bi-stop-circle").addClass("bi-record-circle");
+        $label.text("Rekam");
+        $btn.attr("title", "Mulai rekam");
+    }
 }
 
 // ─── Preview helpers ──────────────────────────────────────────────────────────
@@ -50,7 +64,7 @@ export function closePreview() { hidePreview(); }
 
 export function recordStart() {
     hidePreview();
-    setBadge(true);
+    setRecordBtn(true);
 
     if (state.recordMode === "stream") {
         const ok = stream.start();
@@ -65,7 +79,7 @@ export function recordStart() {
 }
 
 export function recordStop() {
-    setBadge(false);
+    setRecordBtn(false);
 
     if (state.recordMode === "stream") {
         stream.stop(function (blob) {
@@ -76,6 +90,11 @@ export function recordStop() {
         const last = frame.getLastFrame();
         if (last) showPreview(last, false);
     }
+}
+
+export function recordToggle() {
+    if (_recording) recordStop();
+    else            recordStart();
 }
 
 export function play() {
