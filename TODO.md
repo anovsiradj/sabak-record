@@ -1,4 +1,8 @@
-# TODO
+# Raster Todos
 
-- [ ] Ekspor galeri sebagai ZIP
-- [ ] Pratinjau bentuk saat hover tombol alat
+- Ekspor galeri sebagai unduh ZIP
+
+# Vector Todos
+
+- realisasi
+
