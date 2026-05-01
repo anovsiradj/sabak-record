@@ -16,7 +16,7 @@ import {
     toggleRecordMode, syncModeToggle
 } from "./js/record.js";
 import {
-    initColorPalette, initToolButtons,
+    initColorPalette, initToolButtons, initShapePopover, initSelectShapePopover,
     initLineWidth, resetCanvas,
     updateOrdinat
 } from "./js/ui.js";
@@ -88,6 +88,8 @@ $(function () {
     initMemo();
     initColorPalette();
     initToolButtons();
+    initShapePopover();
+    initSelectShapePopover();
     initLineWidth();
     initGallery();
     syncModeToggle();

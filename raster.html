@@ -111,50 +111,27 @@
         <!-- ── Left Sidebar ──────────────────────────────────── -->
         <aside class="sabak-sidebar">
 
-            <!-- Drawing tools -->
+            <!-- Core tools (always visible) -->
             <div class="sidebar-group" role="group" aria-label="Alat gambar">
-                <button class="tool-btn active" data-tool="pen" title="Pena">
+                <button class="tool-btn active" data-tool="pen" title="Pensil">
                     <i class="bi bi-pencil"></i>
                 </button>
-                <button class="tool-btn" data-tool="eraser" title="Penghapus"><i class="bi bi-eraser"></i></button>
-                <button class="tool-btn" data-tool="line" title="Garis"><i class="bi bi-slash-lg"></i></button>
-                <button class="tool-btn" data-tool="rect" title="Persegi"><i class="bi bi-square"></i></button>
-                <button class="tool-btn" data-tool="circle" title="Lingkaran"><i class="bi bi-circle"></i></button>
-                <button class="tool-btn" data-tool="triangle" title="Segitiga"><i class="bi bi-triangle"></i></button>
-                <button class="tool-btn" data-tool="diamond" title="Berlian"><i class="bi bi-diamond"></i></button>
-                <button class="tool-btn" data-tool="star" title="Bintang"><i class="bi bi-star"></i></button>
-                <button class="tool-btn" data-tool="arrow" title="Panah"><i class="bi bi-arrow-right"></i></button>
-                <button class="tool-btn" data-tool="pentagon" title="Segilima"><i class="bi bi-pentagon"></i></button>
-                <button class="tool-btn" data-tool="hexagon" title="Segienam"><i class="bi bi-hexagon"></i></button>
-                <button class="tool-btn" data-tool="select" title="Seleksi"><i class="bi bi-bounding-box"></i></button>
-                <button class="tool-btn" data-tool="text" title="Teks" id="text_tool_btn"><i
-                        class="bi bi-fonts"></i></button>
+                <button class="tool-btn" data-tool="eraser" title="Penghapus">
+                    <i class="bi bi-eraser"></i>
+                </button>
+                <!-- Shape picker trigger — hover to open shape popover -->
+                <button class="tool-btn" id="shape_trigger_btn" title="Bentuk">
+                    <i class="bi bi-slash-lg" id="shape_trigger_icon"></i>
+                </button>
+                <button class="tool-btn" data-tool="select" title="Seleksi" id="select_trigger_btn">
+                    <i class="bi bi-bounding-box"></i>
+                </button>
+                <button class="tool-btn" data-tool="text" title="Teks" id="text_tool_btn">
+                    <i class="bi bi-fonts"></i>
+                </button>
             </div>
 
-                <div class="sidebar-sep"></div>
-
-                <!-- Selection shape sub-panel (hidden unless select tool is active) -->
-                <div id="select_shape_panel" class="d-none">
-                    <div class="sidebar-group" role="group" aria-label="Bentuk seleksi">
-                        <button class="tool-btn active" data-shape="rect" title="Persegi"><i class="bi bi-square"></i></button>
-                        <button class="tool-btn" data-shape="circle" title="Lingkaran"><i class="bi bi-circle"></i></button>
-                        <button class="tool-btn" data-shape="triangle" title="Segitiga"><i class="bi bi-triangle"></i></button>
-                        <button class="tool-btn" data-shape="diamond" title="Berlian"><i class="bi bi-diamond"></i></button>
-                        <button class="tool-btn" data-shape="star" title="Bintang"><i class="bi bi-star"></i></button>
-                        <button class="tool-btn" data-shape="arrow" title="Panah"><i class="bi bi-arrow-right"></i></button>
-                        <button class="tool-btn" data-shape="pentagon" title="Segilima"><i class="bi bi-pentagon"></i></button>
-                        <button class="tool-btn" data-shape="hexagon" title="Segienam"><i class="bi bi-hexagon"></i></button>
-                        <button class="tool-btn" data-shape="pen" title="Bebas"><i class="bi bi-pencil"></i></button>
-                    </div>
-                    <div class="sidebar-sep"></div>
-                    <div id="select_action_controls" class="d-none">
-                        <button class="tool-btn w-100" id="btn_delete_selection" title="Hapus Seleksi">
-                            <i class="bi bi-scissors"></i><span class="small">Hapus</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="sidebar-sep"></div>
+            <div class="sidebar-sep"></div>
 
             <!-- Line width — hover-reveal -->
             <div class="lw-trigger-wrap" title="Ketebalan garis">
@@ -167,21 +144,18 @@
 
             <div class="sidebar-sep"></div>
 
-            <!-- Colour palette -->
-            <div class="sidebar-group" id="sbk_color" role="group" aria-label="Pilih warna">
-                <!-- Mejikuhibiniu -->
-                <button class="color-swatch" data-clr="#e53935" title="Merah"></button>
-                <button class="color-swatch" data-clr="#fb8c00" title="Jingga"></button>
-                <button class="color-swatch" data-clr="#fdd835" title="Kuning"></button>
-                <button class="color-swatch" data-clr="#43a047" title="Hijau"></button>
-                <button class="color-swatch" data-clr="#1e88e5" title="Biru"></button>
-                <button class="color-swatch" data-clr="#3949ab" title="Nila"></button>
-                <button class="color-swatch" data-clr="#8e24aa" title="Ungu"></button>
-                <!-- Neutral -->
-                <button class="color-swatch" data-clr="#ffffff" title="Putih"></button>
-                <button class="color-swatch" data-clr="#212121" title="Hitam"></button>
-                <!-- Custom colour picker -->
-                <label class="color-swatch color-swatch-picker" title="Warna kustom">
+            <!-- Colour trigger — hover to open colour popover -->
+            <div class="lw-trigger-wrap" title="Warna">
+                <button class="tool-btn" id="color_trigger_btn" aria-label="Pilih warna">
+                    <span class="lw-dot-wrap">
+                        <span id="color_trigger_dot" class="lw-dot" style="background:#ffffff; width:16px; height:16px;"></span>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Custom colour picker — standalone, below the preset popover trigger -->
+            <div class="lw-trigger-wrap" title="Warna kustom">
+                <label class="tool-btn color-swatch-picker" id="color_picker_btn" aria-label="Warna kustom">
                     <i class="bi bi-eyedropper"></i>
                     <input type="color" id="color_picker" value="#ffffff" tabindex="-1" />
                 </label>
@@ -290,6 +264,44 @@
         <div id="font_preview" class="tp-preview">Aa</div>
         <label class="tp-label">Ukuran</label>
         <input type="number" id="font_size_input" class="tp-size" min="6" max="300" value="20" />
+    </div>
+
+    <!-- Shape picker popover — body-level, shown on shape trigger hover -->
+    <div id="shape_popover" class="shape-popover" role="tooltip" aria-hidden="true">
+        <button class="tool-btn" data-tool="line"     title="Garis">    <i class="bi bi-slash-lg"></i></button>
+        <button class="tool-btn" data-tool="rect"     title="Persegi">  <i class="bi bi-square"></i></button>
+        <button class="tool-btn" data-tool="circle"   title="Lingkaran"><i class="bi bi-circle"></i></button>
+        <button class="tool-btn" data-tool="triangle" title="Segitiga"> <i class="bi bi-triangle"></i></button>
+        <button class="tool-btn" data-tool="diamond"  title="Berlian">  <i class="bi bi-diamond"></i></button>
+        <button class="tool-btn" data-tool="star"     title="Bintang">  <i class="bi bi-star"></i></button>
+        <button class="tool-btn" data-tool="arrow"    title="Panah">    <i class="bi bi-arrow-right"></i></button>
+        <button class="tool-btn" data-tool="pentagon" title="Segilima"> <i class="bi bi-pentagon"></i></button>
+        <button class="tool-btn" data-tool="hexagon"  title="Segienam"> <i class="bi bi-hexagon"></i></button>
+    </div>
+
+    <!-- Selection shape popover — body-level, shown on select trigger hover -->
+    <div id="select_shape_popover" class="shape-popover" role="tooltip" aria-hidden="true">
+        <button class="sel-shape-btn tool-btn active" data-shape="rect"     title="Persegi">  <i class="bi bi-square"></i></button>
+        <button class="sel-shape-btn tool-btn"        data-shape="circle"   title="Lingkaran"><i class="bi bi-circle"></i></button>
+        <button class="sel-shape-btn tool-btn"        data-shape="triangle" title="Segitiga"> <i class="bi bi-triangle"></i></button>
+        <button class="sel-shape-btn tool-btn"        data-shape="diamond"  title="Berlian">  <i class="bi bi-diamond"></i></button>
+        <button class="sel-shape-btn tool-btn"        data-shape="star"     title="Bintang">  <i class="bi bi-star"></i></button>
+        <button class="sel-shape-btn tool-btn"        data-shape="pentagon" title="Segilima"> <i class="bi bi-pentagon"></i></button>
+        <button class="sel-shape-btn tool-btn"        data-shape="hexagon"  title="Segienam"> <i class="bi bi-hexagon"></i></button>
+        <button class="sel-shape-btn tool-btn"        data-shape="pen"      title="Bebas">    <i class="bi bi-pencil"></i></button>
+    </div>
+
+    <!-- Colour popover — body-level, shown on colour trigger hover -->
+    <div id="color_popover" class="color-popover" role="tooltip" aria-hidden="true">
+        <button class="color-swatch" data-clr="#e53935" title="Merah"></button>
+        <button class="color-swatch" data-clr="#fb8c00" title="Jingga"></button>
+        <button class="color-swatch" data-clr="#fdd835" title="Kuning"></button>
+        <button class="color-swatch" data-clr="#43a047" title="Hijau"></button>
+        <button class="color-swatch" data-clr="#1e88e5" title="Biru"></button>
+        <button class="color-swatch" data-clr="#3949ab" title="Nila"></button>
+        <button class="color-swatch" data-clr="#8e24aa" title="Ungu"></button>
+        <button class="color-swatch" data-clr="#ffffff" title="Putih"></button>
+        <button class="color-swatch" data-clr="#212121" title="Hitam"></button>
     </div>
 
     <!-- ── Config Modal ──────────────────────────────────────── -->

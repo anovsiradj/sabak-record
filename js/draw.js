@@ -96,25 +96,29 @@ export function pathArrow(ctx, x1, y1, x2, y2) {
     const dx    = x2 - x1;
     const dy    = y2 - y1;
     const len   = Math.hypot(dx, dy);
+    if (len < 2) return;
     const angle = Math.atan2(dy, dx);
 
-    const hw = Math.min(len * 0.35, 30);
-    const hl = Math.min(len * 0.4,  40);
-    const sw = Math.max(len * 0.12,  4);
+    // Arrowhead size: capped so it doesn't overwhelm short drags
+    const headLen = Math.min(len * 0.35, 20);
+    const headAng = Math.PI / 6;   // 30° half-angle
 
     ctx.save();
     ctx.translate(x1, y1);
     ctx.rotate(angle);
 
+    // Shaft: line from origin to tip
     ctx.beginPath();
-    ctx.moveTo(0,        -sw);
-    ctx.lineTo(len - hl, -sw);
-    ctx.lineTo(len - hl, -hw);
-    ctx.lineTo(len,        0);
-    ctx.lineTo(len - hl,  hw);
-    ctx.lineTo(len - hl,  sw);
-    ctx.lineTo(0,         sw);
-    ctx.closePath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(len, 0);
+
+    // Left barb
+    ctx.moveTo(len, 0);
+    ctx.lineTo(len - headLen * Math.cos(headAng), -headLen * Math.sin(headAng));
+
+    // Right barb
+    ctx.moveTo(len, 0);
+    ctx.lineTo(len - headLen * Math.cos(headAng),  headLen * Math.sin(headAng));
 
     ctx.restore();
 }

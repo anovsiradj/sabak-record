@@ -618,3 +618,55 @@ body.sabak-app {
     padding: 0.25rem 0.6rem;
     bottom: 1.25rem;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SHAPE PICKER POPOVER (body-level, JS-positioned)
+═══════════════════════════════════════════════════════════════ */
+
+.shape-popover {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.4rem;
+    display: grid;
+    grid-template-columns: repeat(3, 36px);
+    gap: 3px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 9999;
+    box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.shape-popover.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   COLOUR POPOVER (body-level, JS-positioned)
+═══════════════════════════════════════════════════════════════ */
+
+.color-popover {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem;
+    display: grid;
+    grid-template-columns: repeat(2, 22px);
+    gap: 5px;
+    align-items: center;
+    justify-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 9999;
+    box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.color-popover.visible {
+    opacity: 1;
+    pointer-events: auto;
+}

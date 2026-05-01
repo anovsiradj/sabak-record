@@ -14,12 +14,29 @@ let anchorX = 0, anchorY = 0;       // mousedown point
 let curX    = 0, curY    = 0;       // current pointer position
 let isSelecting  = false;           // drag gesture in progress
 let hasSelection = false;           // selection finalised
-let selX1 = 0, selY1 = 0;          // bounding box of finalised selection
-let selX2 = 0, selY2 = 0;
+let selX1 = 0, selY1 = 0;          // bounding box of finalised selection (top-left)
+let selX2 = 0, selY2 = 0;          // bounding box of finalised selection (bottom-right)
 let freeformPath = [];              // [{x,y}] for pen/freeform mode
 let copiedPixels = null;            // ImageData of the copied region
 let isDraggingMove = false;         // move drag in progress
 let moveOffsetX = 0, moveOffsetY = 0;
+
+// ─── Bounding box helper ──────────────────────────────────────────────────────
+
+/**
+ * Computes the axis-aligned bounding box of an array of {x,y} points.
+ * Returns {x1, y1, x2, y2} where (x1,y1) is top-left, (x2,y2) is bottom-right.
+ */
+function pathBBox(points) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const pt of points) {
+        if (pt.x < minX) minX = pt.x;
+        if (pt.y < minY) minY = pt.y;
+        if (pt.x > maxX) maxX = pt.x;
+        if (pt.y > maxY) maxY = pt.y;
+    }
+    return { x1: minX, y1: minY, x2: maxX, y2: maxY };
+}
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -32,11 +49,7 @@ function isInsideSelection(px, py) {
     if (!hasSelection) return false;
 
     if (state.selectShapeMode === "rect") {
-        const x1 = Math.min(selX1, selX2);
-        const y1 = Math.min(selY1, selY2);
-        const x2 = Math.max(selX1, selX2);
-        const y2 = Math.max(selY1, selY2);
-        return px >= x1 && px <= x2 && py >= y1 && py <= y2;
+        return px >= selX1 && px <= selX2 && py >= selY1 && py <= selY2;
     }
 
     // For non-rectangular shapes, use an offscreen canvas for hit-testing
@@ -78,9 +91,9 @@ function buildSelectionPath(ctx) {
 }
 
 /**
- * Draws the dashed selection boundary on the ghost canvas.
- * During a selection gesture, uses anchorX/anchorY → curX/curY.
- * After finalisation, uses selX1/selY1 → selX2/selY2.
+ * Draws the dashed selection boundary on the ghost canvas during a gesture.
+ * Freeform: traces the live freeformPath.
+ * Shapes: uses anchorX/anchorY → curX/curY bounding box.
  */
 function drawOverlay() {
     const ctx = getGhostCtx();
@@ -92,8 +105,11 @@ function drawOverlay() {
     ctx.globalCompositeOperation = "source-over";
 
     if (state.selectShapeMode === "pen") {
+        if (freeformPath.length < 2) { ctx.restore(); return; }
         ctx.beginPath();
         freeformPath.forEach((pt, i) => i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y));
+        // Draw a closing line back to start so the user can see the shape forming
+        ctx.lineTo(freeformPath[0].x, freeformPath[0].y);
         ctx.stroke();
     } else {
         const fn = SHAPE_PATH_FNS[state.selectShapeMode];
@@ -107,8 +123,8 @@ function drawOverlay() {
 }
 
 /**
- * Draws the finalised selection overlay (after gesture is complete).
- * Uses the stored selX1/selY1 → selX2/selY2 bounding box.
+ * Draws the finalised selection overlay.
+ * Uses freeformPath for pen mode, selX1/selY1→selX2/selY2 for shapes.
  */
 function drawFinalOverlay() {
     const ctx = getGhostCtx();
@@ -122,6 +138,7 @@ function drawFinalOverlay() {
     if (state.selectShapeMode === "pen") {
         ctx.beginPath();
         freeformPath.forEach((pt, i) => i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y));
+        ctx.closePath();
         ctx.stroke();
     } else {
         const fn = SHAPE_PATH_FNS[state.selectShapeMode];
@@ -143,10 +160,10 @@ function renderMovePreview() {
 
     if (!copiedPixels) return;
 
+    // selX1/selY1 is always the top-left of the bounding box
     const dropX = selX1 + moveOffsetX;
     const dropY = selY1 + moveOffsetY;
 
-    // Create offscreen canvas from copiedPixels
     const offscreen = document.createElement("canvas");
     offscreen.width  = copiedPixels.width;
     offscreen.height = copiedPixels.height;
@@ -164,53 +181,48 @@ export function onSelectDown(e) {
     e.preventDefault();
     const pos = getPos(e);
 
-    // If a move drag is already in progress, this shouldn't happen normally,
-    // but guard against it.
+    // "arrow" was removed from selection shapes — fall back to rect
+    if (state.selectShapeMode === "arrow") state.selectShapeMode = "rect";
+
+    // Guard against double-down during move drag
     if (isDraggingMove) return;
 
-    // If there is an active selection and the click is inside it, start a move drag.
+    // Active selection: click inside → start move drag, click outside → cancel
     if (hasSelection && isInsideSelection(pos.x, pos.y)) {
         isDraggingMove = true;
         moveOffsetX = 0;
         moveOffsetY = 0;
 
-        // Capture the pixels from the selection region
-        const w = Math.abs(selX2 - selX1);
-        const h = Math.abs(selY2 - selY1);
-        const x1 = Math.min(selX1, selX2);
-        const y1 = Math.min(selY1, selY2);
-        copiedPixels = state.sbk.getImageData(x1, y1, w, h);
+        // Capture pixels from the bounding box
+        const w = selX2 - selX1;
+        const h = selY2 - selY1;
+        copiedPixels = state.sbk.getImageData(selX1, selY1, w, h);
 
-        // Fill the vacated area with BG_COLOR
+        // Erase the vacated area
         const sbk = state.sbk;
+        sbk.save();
+        sbk.globalCompositeOperation = "source-over";
         if (state.selectShapeMode === "rect") {
-            sbk.save();
-            sbk.globalCompositeOperation = "source-over";
             sbk.fillStyle = BG_COLOR;
-            sbk.fillRect(x1, y1, w, h);
-            sbk.restore();
+            sbk.fillRect(selX1, selY1, w, h);
         } else {
-            sbk.save();
-            sbk.globalCompositeOperation = "source-over";
             buildSelectionPath(sbk);
             sbk.clip();
             sbk.fillStyle = BG_COLOR;
-            sbk.fillRect(x1, y1, w, h);
-            sbk.restore();
+            sbk.fillRect(selX1, selY1, w, h);
         }
+        sbk.restore();
 
-        // Record the anchor for computing move offset
         anchorX = pos.x;
         anchorY = pos.y;
         return;
     }
 
-    // If there is an active selection and the click is outside it, cancel it.
     if (hasSelection) {
         cancelSelection();
     }
 
-    // Start a new selection gesture.
+    // Start a new selection gesture
     anchorX = pos.x;
     anchorY = pos.y;
     curX    = pos.x;
@@ -229,7 +241,6 @@ export function onSelectMove(e) {
     const pos = getPos(e);
 
     if (isDraggingMove) {
-        // Update move offset relative to the anchor point
         moveOffsetX = pos.x - anchorX;
         moveOffsetY = pos.y - anchorY;
         renderMovePreview();
@@ -253,46 +264,36 @@ export function onSelectUp(e) {
     const pos = getPos(e);
 
     if (isDraggingMove) {
-        // Drop: composite copied pixels back onto the main canvas
         isDraggingMove = false;
 
-        const dropX = Math.min(selX1, selX2) + moveOffsetX;
-        const dropY = Math.min(selY1, selY2) + moveOffsetY;
-
-        // Clamp drop position so the region stays within canvas bounds
-        const w = Math.abs(selX2 - selX1);
-        const h = Math.abs(selY2 - selY1);
-        const clampedX = Math.max(0, Math.min(state.canvas.width  - w, dropX));
-        const clampedY = Math.max(0, Math.min(state.canvas.height - h, dropY));
+        const w = selX2 - selX1;
+        const h = selY2 - selY1;
+        const rawDropX = selX1 + moveOffsetX;
+        const rawDropY = selY1 + moveOffsetY;
+        const clampedX = Math.max(0, Math.min(state.canvas.width  - w, rawDropX));
+        const clampedY = Math.max(0, Math.min(state.canvas.height - h, rawDropY));
+        const dx = clampedX - selX1;
+        const dy = clampedY - selY1;
 
         const sbk = state.sbk;
 
         if (state.selectShapeMode === "rect") {
             sbk.putImageData(copiedPixels, clampedX, clampedY);
         } else {
-            // Create offscreen canvas from copiedPixels
             const offscreen = document.createElement("canvas");
             offscreen.width  = copiedPixels.width;
             offscreen.height = copiedPixels.height;
             offscreen.getContext("2d").putImageData(copiedPixels, 0, 0);
 
-            // Compute the offset from original position to drop position
-            const origX = Math.min(selX1, selX2);
-            const origY = Math.min(selY1, selY2);
-            const dx = clampedX - origX;
-            const dy = clampedY - origY;
-
             sbk.save();
             sbk.globalCompositeOperation = "source-over";
 
-            // Build the shape path at the new (translated) position
+            // Rebuild the shape path at the new (translated) position
             if (state.selectShapeMode === "pen") {
                 sbk.beginPath();
                 freeformPath.forEach((pt, i) => {
-                    const nx = pt.x + dx;
-                    const ny = pt.y + dy;
-                    if (i === 0) sbk.moveTo(nx, ny);
-                    else         sbk.lineTo(nx, ny);
+                    if (i === 0) sbk.moveTo(pt.x + dx, pt.y + dy);
+                    else         sbk.lineTo(pt.x + dx, pt.y + dy);
                 });
                 sbk.closePath();
             } else {
@@ -307,15 +308,9 @@ export function onSelectUp(e) {
             sbk.restore();
         }
 
-        // Update selection bounding box to new position
-        const origX = Math.min(selX1, selX2);
-        const origY = Math.min(selY1, selY2);
-        const dx = clampedX - origX;
-        const dy = clampedY - origY;
-        selX1 += dx;
-        selY1 += dy;
-        selX2 += dx;
-        selY2 += dy;
+        // Update bounding box and freeform path to new position
+        selX1 += dx;  selY1 += dy;
+        selX2 += dx;  selY2 += dy;
         if (state.selectShapeMode === "pen") {
             freeformPath = freeformPath.map(pt => ({ x: pt.x + dx, y: pt.y + dy }));
         }
@@ -340,79 +335,83 @@ export function onSelectUp(e) {
         freeformPath.push({ x: pos.x, y: pos.y });
     }
 
-    // Zero-area guard: no selection if drag < 2px
+    // Zero-area guard
     if (Math.hypot(curX - anchorX, curY - anchorY) < 2) {
         clearGhost();
         hasSelection = false;
+        freeformPath = [];
         return;
     }
 
-    // Finalise selection bounding box
-    selX1 = anchorX;
-    selY1 = anchorY;
-    selX2 = curX;
-    selY2 = curY;
+    // Freeform: need at least a few points to form a meaningful region
+    if (state.selectShapeMode === "pen" && freeformPath.length < 3) {
+        clearGhost();
+        hasSelection = false;
+        freeformPath = [];
+        return;
+    }
+
+    // Compute the bounding box.
+    // For freeform: use the actual path bounding box (not just start→end).
+    // For shapes: use the drag bounding box (normalised so x1<x2, y1<y2).
+    if (state.selectShapeMode === "pen") {
+        const bb = pathBBox(freeformPath);
+        selX1 = Math.floor(bb.x1);
+        selY1 = Math.floor(bb.y1);
+        selX2 = Math.ceil(bb.x2);
+        selY2 = Math.ceil(bb.y2);
+    } else {
+        selX1 = Math.min(anchorX, curX);
+        selY1 = Math.min(anchorY, curY);
+        selX2 = Math.max(anchorX, curX);
+        selY2 = Math.max(anchorY, curY);
+    }
+
     hasSelection = true;
-
-    // Draw the finalised overlay
     drawFinalOverlay();
-
-    // Update action controls visibility
-    updateActionControls();
 }
 
 export function onSelectLeave() {
-    // Cancel in-progress selection gesture without modifying canvas
     if (isSelecting) {
         isSelecting  = false;
         freeformPath = [];
         clearGhost();
-        // If there was a prior finalised selection, redraw its overlay
-        if (hasSelection) {
-            drawFinalOverlay();
-        }
+        if (hasSelection) drawFinalOverlay();
     }
 }
 
 export function deleteSelection() {
     if (!hasSelection) return;
 
-    const sbk = state.sbk;
-    const x1  = Math.min(selX1, selX2);
-    const y1  = Math.min(selY1, selY2);
-    const w   = Math.abs(selX2 - selX1);
-    const h   = Math.abs(selY2 - selY1);
+    const w = selX2 - selX1;
+    const h = selY2 - selY1;
 
+    const sbk = state.sbk;
     sbk.save();
     sbk.globalCompositeOperation = "source-over";
 
     if (state.selectShapeMode === "rect") {
         sbk.fillStyle = BG_COLOR;
-        sbk.fillRect(x1, y1, w, h);
+        sbk.fillRect(selX1, selY1, w, h);
     } else {
         buildSelectionPath(sbk);
         sbk.clip();
         sbk.fillStyle = BG_COLOR;
-        sbk.fillRect(x1, y1, w, h);
+        sbk.fillRect(selX1, selY1, w, h);
     }
 
     sbk.restore();
-
     clearGhost();
     pushUndo();
 
-    // Reset selection state
-    hasSelection = false;
-    isSelecting  = false;
-    freeformPath = [];
-    copiedPixels = null;
+    hasSelection   = false;
+    isSelecting    = false;
+    freeformPath   = [];
+    copiedPixels   = null;
     isDraggingMove = false;
-
-    updateActionControls();
 }
 
 export function cancelSelection() {
-    // Reset all selection state without modifying the main canvas
     hasSelection   = false;
     isSelecting    = false;
     isDraggingMove = false;
@@ -422,25 +421,14 @@ export function cancelSelection() {
     curX    = curY    = 0;
     selX1 = selY1 = selX2 = selY2 = 0;
     moveOffsetX = moveOffsetY = 0;
-
     clearGhost();
-    updateActionControls();
-}
-
-// ─── Action controls visibility ───────────────────────────────────────────────
-
-function updateActionControls() {
-    // Show/hide move and delete controls based on whether a selection is active
-    $("#select_action_controls").toggleClass("d-none", !hasSelection);
 }
 
 // ─── Initialisation ───────────────────────────────────────────────────────────
 
 export function initSelectTool() {
-    // Keyboard shortcuts
     $(document).on("keydown", function (e) {
         if (state.tool !== "select") return;
-
         if (e.key === "Delete" || e.key === "Backspace") {
             e.preventDefault();
             deleteSelection();
@@ -450,22 +438,10 @@ export function initSelectTool() {
         }
     });
 
-    // Shape-mode button clicks in #select_shape_panel
-    $(document).on("click", "#select_shape_panel [data-shape]", function () {
+    $(document).on("click", "#select_shape_popover [data-shape]", function () {
         state.selectShapeMode = $(this).data("shape");
-
-        // Update active state on shape buttons
-        $("#select_shape_panel [data-shape]").removeClass("active");
+        $("#select_shape_popover [data-shape]").removeClass("active");
         $(this).addClass("active");
-
-        // If there's an active selection, cancel it since the shape mode changed
-        if (hasSelection || isSelecting) {
-            cancelSelection();
-        }
-    });
-
-    // Delete button click
-    $(document).on("click", "#btn_delete_selection", function () {
-        deleteSelection();
+        if (hasSelection || isSelecting) cancelSelection();
     });
 }

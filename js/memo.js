@@ -1,5 +1,5 @@
 // js/memo.js — undo / redo stack (Ctrl+Z / Ctrl+Y).
-// Snapshot-based: each entry is a WebP data-URL of the full canvas.
+// Snapshot-based: each entry is a data-URL of the full canvas (format from state.imageFormat).
 
 import { state, BG_COLOR } from "./state.js";
 
