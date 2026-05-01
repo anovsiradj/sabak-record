@@ -50,7 +50,7 @@ function fitToWrapper(wr, hr) {
 // ─── Resize ───────────────────────────────────────────────────────────────────
 
 function resizeCanvas(newW, newH) {
-    const snap = state.canvas.toDataURL("image/webp", 0.92);
+    const snap = state.canvas.toDataURL(state.imageFormat, 0.92);
 
     state.canvas.width  = newW;
     state.canvas.height = newH;

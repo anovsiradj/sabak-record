@@ -44,7 +44,7 @@ export function addToGallery(item) {
 export function captureToGallery() {
     addToGallery({
         type: "image",
-        src: state.canvas.toDataURL("image/webp", 0.92),
+        src: state.canvas.toDataURL(state.imageFormat, 0.92),
         label: "Tangkapan",
     });
 }
@@ -111,7 +111,9 @@ export function renderGallery() {
 
 function downloadItem(item) {
     if (item.type === "image") {
-        triggerDownload(item.src, item.label + ".webp");
+        // Derive extension from the data-URL MIME type (e.g. "image/webp" → "webp")
+        const ext = (item.src.split(";")[0].split("/")[1]) || "png";
+        triggerDownload(item.src, item.label + "." + ext);
     } else if (item.type === "video" && item.blob) {
         const url = URL.createObjectURL(item.blob);
         triggerDownload(url, item.label + ".webm");

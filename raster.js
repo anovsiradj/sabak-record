@@ -1,4 +1,4 @@
-// canvs.js — entry point
+// raster.js — entry point
 
 import { state } from "./js/state.js";
 import { initMemo, popUndo, popRedo } from "./js/memo.js";
@@ -8,6 +8,8 @@ import {
     getPos
 } from "./js/draw.js";
 import { showTextInput, initTextTool } from "./js/text.js";
+import { onSelectDown, onSelectMove, onSelectUp, onSelectLeave, initSelectTool } from "./js/select.js";
+import { initConfig } from "./js/config.js";
 import {
     recordStart, recordStop, recordToggle,
     play, closePreview, saveRecordingToGallery,
@@ -31,12 +33,24 @@ function handleDown(e) {
         showTextInput(pos.x, pos.y);
         return;
     }
+    if (state.tool === "select") { onSelectDown(e); return; }
     onDown(e);
 }
 
-function handleUp(e) { onUp(e); }
-function handleLeave() { onLeave(); }
-function handleMove(e) { onMove(e); updateOrdinat(getPos(e).x, getPos(e).y); }
+function handleMove(e) {
+    if (state.tool === "select") { onSelectMove(e); updateOrdinat(getPos(e).x, getPos(e).y); return; }
+    onMove(e); updateOrdinat(getPos(e).x, getPos(e).y);
+}
+
+function handleUp(e) {
+    if (state.tool === "select") { onSelectUp(e); return; }
+    onUp(e);
+}
+
+function handleLeave() {
+    if (state.tool === "select") { onSelectLeave(); return; }
+    onLeave();
+}
 
 // ─── Keyboard shortcuts ───────────────────────────────────────────────────────
 
@@ -78,6 +92,8 @@ $(function () {
     initGallery();
     syncModeToggle();
     initTextTool();
+    initSelectTool();
+    initConfig();
     initKeyboard();
 
     updateOrdinat(0, 0);

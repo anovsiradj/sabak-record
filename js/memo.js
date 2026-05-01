@@ -5,29 +5,37 @@ import { state, BG_COLOR } from "./state.js";
 
 const $ = window.$;
 
-const MAX = 10;
+let MAX = 10;  // driven by state.stackSize
 const undoStack = [];
 const redoStack = [];
 
 // ─── Push / restore ───────────────────────────────────────────────────────────
 
+export function setStackSize(n) {
+    MAX = n;
+    // Trim oldest entries if stacks exceed new limit (requirement 3.8)
+    while (undoStack.length > MAX) undoStack.shift();
+    while (redoStack.length > MAX) redoStack.shift();
+    state.stackSize = n;
+}
+
 export function pushUndo() {
     if (undoStack.length >= MAX) undoStack.shift();
-    undoStack.push(state.canvas.toDataURL("image/webp", 0.92));
+    undoStack.push(state.canvas.toDataURL(state.imageFormat, 0.92));
     redoStack.length = 0; // new action clears redo
 }
 
 export function popUndo() {
     if (!undoStack.length) return;
     // Save current state to redo before restoring
-    redoStack.push(state.canvas.toDataURL("image/webp", 0.92));
+    redoStack.push(state.canvas.toDataURL(state.imageFormat, 0.92));
     restoreSnapshot(undoStack.pop());
 }
 
 export function popRedo() {
     if (!redoStack.length) return;
     // Save current state to undo before restoring
-    undoStack.push(state.canvas.toDataURL("image/webp", 0.92));
+    undoStack.push(state.canvas.toDataURL(state.imageFormat, 0.92));
     restoreSnapshot(redoStack.pop());
 }
 

@@ -1,11 +1,21 @@
-# Sabak Paint
+# Sabak — Papan Tulis Digital
 
-- able to undo and redo
-- keep image and video from the canvas
+## Sabak Raster
 
-## link
+HTML5 Canvas Terinspirasi MS Paint.
 
-- online <https://anovsiradj.github.io/sabak-record/canvs.html>
-- offline <http://localhost:5074/anoop/sabak/canvs.html>
+## test
 
-- https://en.wikipedia.org/wiki/Frame_rate
+```sh
+# Jalankan test suite (property-based tests dengan fast-check)
+npm test
+
+# Watch mode
+npm run test:watch
+```
+
+# dev
+
+```sh
+npm install
+```

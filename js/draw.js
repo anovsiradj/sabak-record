@@ -44,6 +44,132 @@ export function resizeGhost(w, h) {
     if (ghost) { ghost.width = w; ghost.height = h; }
 }
 
+export function getGhostCtx() { return gctx; }
+export function getGhost()    { return ghost; }
+export function clearGhost()  { gctx.clearRect(0, 0, ghost.width, ghost.height); }
+
+// ─── Shape path functions ─────────────────────────────────────────────────────
+// Each function builds a path on `ctx` for the given bounding box (x1,y1)→(x2,y2).
+// None of them call stroke() or fill() — the caller is responsible for styling.
+
+export function pathTriangle(ctx, x1, y1, x2, y2) {
+    const cx = (x1 + x2) / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, y1);
+    ctx.lineTo(x1, y2);
+    ctx.lineTo(x2, y2);
+    ctx.closePath();
+}
+
+export function pathDiamond(ctx, x1, y1, x2, y2) {
+    const cx = (x1 + x2) / 2;
+    const cy = (y1 + y2) / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, y1);
+    ctx.lineTo(x2, cy);
+    ctx.lineTo(cx, y2);
+    ctx.lineTo(x1, cy);
+    ctx.closePath();
+}
+
+export function pathStar(ctx, x1, y1, x2, y2) {
+    const cx = (x1 + x2) / 2;
+    const cy = (y1 + y2) / 2;
+    const w  = Math.abs(x2 - x1);
+    const h  = Math.abs(y2 - y1);
+    const r  = Math.min(w, h) / 2;
+    const ri = r * 0.382;
+    const points = 5;
+    ctx.beginPath();
+    for (let i = 0; i < points * 2; i++) {
+        const angle  = (i * Math.PI) / points - Math.PI / 2;
+        const radius = i % 2 === 0 ? r : ri;
+        const px = cx + radius * Math.cos(angle);
+        const py = cy + radius * Math.sin(angle);
+        if (i === 0) ctx.moveTo(px, py);
+        else         ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+}
+
+export function pathArrow(ctx, x1, y1, x2, y2) {
+    const dx    = x2 - x1;
+    const dy    = y2 - y1;
+    const len   = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx);
+
+    const hw = Math.min(len * 0.35, 30);
+    const hl = Math.min(len * 0.4,  40);
+    const sw = Math.max(len * 0.12,  4);
+
+    ctx.save();
+    ctx.translate(x1, y1);
+    ctx.rotate(angle);
+
+    ctx.beginPath();
+    ctx.moveTo(0,        -sw);
+    ctx.lineTo(len - hl, -sw);
+    ctx.lineTo(len - hl, -hw);
+    ctx.lineTo(len,        0);
+    ctx.lineTo(len - hl,  hw);
+    ctx.lineTo(len - hl,  sw);
+    ctx.lineTo(0,         sw);
+    ctx.closePath();
+
+    ctx.restore();
+}
+
+export function pathPentagon(ctx, x1, y1, x2, y2) {
+    const cx = (x1 + x2) / 2;
+    const cy = (y1 + y2) / 2;
+    const w  = Math.abs(x2 - x1);
+    const h  = Math.abs(y2 - y1);
+    const r  = Math.min(w, h) / 2;
+    const sides = 5;
+    ctx.beginPath();
+    for (let i = 0; i < sides; i++) {
+        const angle = (2 * Math.PI * i) / sides - Math.PI / 2;
+        const px = cx + r * Math.cos(angle);
+        const py = cy + r * Math.sin(angle);
+        if (i === 0) ctx.moveTo(px, py);
+        else         ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+}
+
+export function pathHexagon(ctx, x1, y1, x2, y2) {
+    const cx = (x1 + x2) / 2;
+    const cy = (y1 + y2) / 2;
+    const w  = Math.abs(x2 - x1);
+    const h  = Math.abs(y2 - y1);
+    const r  = Math.min(w, h) / 2;
+    const sides = 6;
+    ctx.beginPath();
+    for (let i = 0; i < sides; i++) {
+        const angle = (2 * Math.PI * i) / sides - Math.PI / 2;
+        const px = cx + r * Math.cos(angle);
+        const py = cy + r * Math.sin(angle);
+        if (i === 0) ctx.moveTo(px, py);
+        else         ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+}
+
+export const SHAPE_PATH_FNS = {
+    triangle: pathTriangle,
+    diamond:  pathDiamond,
+    star:     pathStar,
+    arrow:    pathArrow,
+    pentagon: pathPentagon,
+    hexagon:  pathHexagon,
+    rect:     (ctx, x1, y1, x2, y2) => ctx.rect(x1, y1, x2 - x1, y2 - y1),
+    circle:   (ctx, x1, y1, x2, y2) => {
+        const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+        ctx.ellipse(cx, cy, Math.abs(x2 - x1) / 2, Math.abs(y2 - y1) / 2, 0, 0, Math.PI * 2);
+    },
+    line:     (ctx, x1, y1, x2, y2) => { ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); },
+};
+
 // ─── Style helper ─────────────────────────────────────────────────────────────
 
 function applyStyle(ctx) {
@@ -99,20 +225,11 @@ export function onMove(e) {
     // Shape preview on ghost canvas
     gctx.clearRect(0, 0, ghost.width, ghost.height);
     applyStyle(gctx);
-    const dx = pos.x - startX;
-    const dy = pos.y - startY;
 
-    if (state.tool === "line") {
+    const fn = SHAPE_PATH_FNS[state.tool];
+    if (fn) {
         gctx.beginPath();
-        gctx.moveTo(startX, startY);
-        gctx.lineTo(pos.x, pos.y);
-        gctx.stroke();
-    } else if (state.tool === "rect") {
-        gctx.strokeRect(startX, startY, dx, dy);
-    } else if (state.tool === "circle") {
-        gctx.beginPath();
-        gctx.ellipse(startX + dx / 2, startY + dy / 2,
-                     Math.abs(dx) / 2, Math.abs(dy) / 2, 0, 0, Math.PI * 2);
+        fn(gctx, startX, startY, pos.x, pos.y);
         gctx.stroke();
     }
 }
@@ -127,23 +244,20 @@ export function onUp(e) {
     }
 
     const pos = getPos(e);
-    const dx  = pos.x - startX;
-    const dy  = pos.y - startY;
+
+    // Zero-area guard: skip commit if drag distance < 2px
+    if (Math.hypot(pos.x - startX, pos.y - startY) < 2) {
+        gctx.clearRect(0, 0, ghost.width, ghost.height);
+        return;
+    }
 
     pushUndo();
     applyStyle(state.sbk);
 
-    if (state.tool === "line") {
+    const fn = SHAPE_PATH_FNS[state.tool];
+    if (fn) {
         state.sbk.beginPath();
-        state.sbk.moveTo(startX, startY);
-        state.sbk.lineTo(pos.x, pos.y);
-        state.sbk.stroke();
-    } else if (state.tool === "rect") {
-        state.sbk.strokeRect(startX, startY, dx, dy);
-    } else if (state.tool === "circle") {
-        state.sbk.beginPath();
-        state.sbk.ellipse(startX + dx / 2, startY + dy / 2,
-                          Math.abs(dx) / 2, Math.abs(dy) / 2, 0, 0, Math.PI * 2);
+        fn(state.sbk, startX, startY, pos.x, pos.y);
         state.sbk.stroke();
     }
 

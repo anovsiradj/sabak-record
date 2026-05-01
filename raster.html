@@ -6,8 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sabak — Papan Tulis Digital</title>
 
-    <link rel="icon" type="image/svg+xml"
-        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23222'/%3E%3Crect x='6' y='8' width='52' height='36' rx='4' fill='%23111' stroke='%23555' stroke-width='2'/%3E%3Cpath d='M14 36 Q22 18 30 28 Q38 38 46 16' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='20' y='48' width='24' height='6' rx='2' fill='%23888'/%3E%3Crect x='29' y='44' width='6' height='5' rx='1' fill='%23888'/%3E%3C/svg%3E" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%23222'/%3E%3Crect x='6' y='8' width='52' height='36' rx='4' fill='%23111' stroke='%23555' stroke-width='2'/%3E%3Cpath d='M14 36 Q22 18 30 28 Q38 38 46 16' stroke='%23fff' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='20' y='48' width='24' height='6' rx='2' fill='%23888'/%3E%3Crect x='29' y='44' width='6' height='5' rx='1' fill='%23888'/%3E%3C/svg%3E" />
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css" />
@@ -92,9 +91,12 @@
 
         </div>
 
-        <!-- Right side: coordinates + Info -->
+        <!-- Right side: coordinates + Config + Info -->
         <div class="sabak-header-status">
             <span class="badge bg-secondary font-monospace small" id="sbk_ordinat">X: 0 Y: 0</span>
+            <button class="hbtn" id="btn_config" title="Konfigurasi">
+                <i class="bi bi-gear"></i><span>Config</span>
+            </button>
             <button class="hbtn" data-bs-toggle="modal" data-bs-target="#infoModal" title="Info">
                 <i class="bi bi-info-circle"></i><span>Info</span>
             </button>
@@ -106,22 +108,53 @@
          BODY  (sidebar + workspace)
     ══════════════════════════════════════════════════════════ -->
     <div class="sabak-body">
-
         <!-- ── Left Sidebar ──────────────────────────────────── -->
         <aside class="sabak-sidebar">
 
             <!-- Drawing tools -->
             <div class="sidebar-group" role="group" aria-label="Alat gambar">
-                <button class="tool-btn active" data-tool="pen" title="Pena"><i class="bi bi-pen"></i></button>
+                <button class="tool-btn active" data-tool="pen" title="Pena">
+                    <i class="bi bi-pencil"></i>
+                </button>
                 <button class="tool-btn" data-tool="eraser" title="Penghapus"><i class="bi bi-eraser"></i></button>
                 <button class="tool-btn" data-tool="line" title="Garis"><i class="bi bi-slash-lg"></i></button>
                 <button class="tool-btn" data-tool="rect" title="Persegi"><i class="bi bi-square"></i></button>
                 <button class="tool-btn" data-tool="circle" title="Lingkaran"><i class="bi bi-circle"></i></button>
+                <button class="tool-btn" data-tool="triangle" title="Segitiga"><i class="bi bi-triangle"></i></button>
+                <button class="tool-btn" data-tool="diamond" title="Berlian"><i class="bi bi-diamond"></i></button>
+                <button class="tool-btn" data-tool="star" title="Bintang"><i class="bi bi-star"></i></button>
+                <button class="tool-btn" data-tool="arrow" title="Panah"><i class="bi bi-arrow-right"></i></button>
+                <button class="tool-btn" data-tool="pentagon" title="Segilima"><i class="bi bi-pentagon"></i></button>
+                <button class="tool-btn" data-tool="hexagon" title="Segienam"><i class="bi bi-hexagon"></i></button>
+                <button class="tool-btn" data-tool="select" title="Seleksi"><i class="bi bi-bounding-box"></i></button>
                 <button class="tool-btn" data-tool="text" title="Teks" id="text_tool_btn"><i
                         class="bi bi-fonts"></i></button>
             </div>
 
-            <div class="sidebar-sep"></div>
+                <div class="sidebar-sep"></div>
+
+                <!-- Selection shape sub-panel (hidden unless select tool is active) -->
+                <div id="select_shape_panel" class="d-none">
+                    <div class="sidebar-group" role="group" aria-label="Bentuk seleksi">
+                        <button class="tool-btn active" data-shape="rect" title="Persegi"><i class="bi bi-square"></i></button>
+                        <button class="tool-btn" data-shape="circle" title="Lingkaran"><i class="bi bi-circle"></i></button>
+                        <button class="tool-btn" data-shape="triangle" title="Segitiga"><i class="bi bi-triangle"></i></button>
+                        <button class="tool-btn" data-shape="diamond" title="Berlian"><i class="bi bi-diamond"></i></button>
+                        <button class="tool-btn" data-shape="star" title="Bintang"><i class="bi bi-star"></i></button>
+                        <button class="tool-btn" data-shape="arrow" title="Panah"><i class="bi bi-arrow-right"></i></button>
+                        <button class="tool-btn" data-shape="pentagon" title="Segilima"><i class="bi bi-pentagon"></i></button>
+                        <button class="tool-btn" data-shape="hexagon" title="Segienam"><i class="bi bi-hexagon"></i></button>
+                        <button class="tool-btn" data-shape="pen" title="Bebas"><i class="bi bi-pencil"></i></button>
+                    </div>
+                    <div class="sidebar-sep"></div>
+                    <div id="select_action_controls" class="d-none">
+                        <button class="tool-btn w-100" id="btn_delete_selection" title="Hapus Seleksi">
+                            <i class="bi bi-scissors"></i><span class="small">Hapus</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-sep"></div>
 
             <!-- Line width — hover-reveal -->
             <div class="lw-trigger-wrap" title="Ketebalan garis">
@@ -259,6 +292,38 @@
         <input type="number" id="font_size_input" class="tp-size" min="6" max="300" value="20" />
     </div>
 
+    <!-- ── Config Modal ──────────────────────────────────────── -->
+    <div class="modal fade" id="configModal" tabindex="-1" aria-labelledby="configModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary">
+                    <h6 class="modal-title" id="configModalLabel">
+                        <i class="bi bi-gear"></i> Konfigurasi
+                    </h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Tutup"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small text-secondary">Format Gambar</label>
+                        <select id="config_format_select"
+                            class="form-select form-select-sm bg-dark text-light border-secondary"></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small text-secondary">Ukuran Stack Undo/Redo</label>
+                        <input type="number" id="config_stack_size"
+                            class="form-control form-control-sm bg-dark text-light border-secondary" min="9" max="99"
+                            value="10" />
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="config_apply">Terapkan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ── Info Modal ─────────────────────────────────────────── -->
     <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -328,13 +393,18 @@
                                     </tr>
                                     <tr>
                                         <td><kbd>Escape</kbd></td>
-                                        <td>Batal teks</td>
+                                        <td>Batal teks / batalkan seleksi</td>
+                                    </tr>
+                                    <tr>
+                                        <td><kbd>Delete</kbd> / <kbd>Backspace</kbd></td>
+                                        <td>Hapus area seleksi</td>
                                     </tr>
                                 </tbody>
                             </table>
                             <p class="text-secondary small mb-0">
                                 Arahkan kursor ke tombol <i class="bi bi-fonts"></i> untuk mengatur font.<br />
-                                Arahkan kursor ke titik tebal di sidebar untuk mengatur ketebalan garis.
+                                Arahkan kursor ke titik tebal di sidebar untuk mengatur ketebalan garis.<br />
+                                Gunakan alat <i class="bi bi-bounding-box"></i> untuk memilih, memindah, atau menghapus area kanvas.
                             </p>
                         </div>
 
@@ -360,11 +430,13 @@
                             </p>
                             <ul class="small mb-1">
                                 <li>Corat Coret Bebas</li>
-                                <li>Bentuk</li>
+                                <li>Bentuk (garis, persegi, lingkaran, segitiga, berlian, bintang, panah, segilima, segienam)</li>
+                                <li>Seleksi, Pindah &amp; Hapus Area</li>
                                 <li>Nulis</li>
                                 <li>Rekap Layar</li>
                                 <li>Tangkap Gambar Layar</li>
                                 <li>Galeri</li>
+                                <li>Konfigurasi (format gambar, ukuran stack undo/redo)</li>
                             </ul>
                             <p class="small mb-0">
                                 Dependensi:
@@ -384,6 +456,9 @@
                             <p class="mb-0">[20260426] rombak: modul JS, undo, shape tools, text tool</p>
                             <p class="mb-0">[20260426] tambah: galeri, MediaRecorder, lightbox</p>
                             <p class="mb-0">[20260426] rombak: layout MS Paint, sidebar, header actions, canvas size</p>
+                            <p class="mb-0">[20260502] tambah: bentuk baru (segitiga, berlian, bintang, panah, segilima, segienam)</p>
+                            <p class="mb-0">[20260502] tambah: alat seleksi (pilih, pindah, hapus area)</p>
+                            <p class="mb-0">[20260502] tambah: konfigurasi format gambar &amp; ukuran stack undo/redo</p>
                         </div>
                     </div>
                 </div>

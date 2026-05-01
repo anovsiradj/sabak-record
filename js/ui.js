@@ -57,12 +57,17 @@ export function setTool(name) {
     state.tool = name;
     const cursors = {
         pen: "crosshair", eraser: "cell",
-        line: "crosshair", rect: "crosshair", circle: "crosshair", text: "text",
+        line: "crosshair", rect: "crosshair", circle: "crosshair",
+        triangle: "crosshair", diamond: "crosshair", star: "crosshair",
+        arrow: "crosshair", pentagon: "crosshair", hexagon: "crosshair",
+        text: "text", select: "crosshair",
     };
     $(state.canvas).css("cursor", cursors[name] || "crosshair");
     $(".tool-btn").each(function () {
         $(this).toggleClass("active", $(this).data("tool") === name);
     });
+    // Show/hide selection sub-panel
+    $("#select_shape_panel").toggleClass("d-none", name !== "select");
 }
 
 export function initToolButtons() {
