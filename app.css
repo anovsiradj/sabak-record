@@ -475,7 +475,8 @@ body.sabak-app {
     padding: 0 !important;
     margin: 0 !important;
     line-height: 1.4;
-    resize: none;     /* auto-resizes via JS scrollHeight */
+    resize: none;
+    /* auto-resizes via JS scrollHeight */
     overflow: hidden;
     z-index: 100;
     outline: none;
