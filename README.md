@@ -1,8 +1,12 @@
-# Sabak — Papan Tulis Digital
+# Sabak — Papan Tulis Online
 
 ## Sabak Raster
 
 HTML5 Canvas Terinspirasi MS Paint.
+
+## Sabak Vector (TODO)
+
+...
 
 ## test
 
