@@ -8,3 +8,6 @@ no build step, run in browser only.
 
 tests is very important, make it if it is make sense.
 
+copas mean copy and paste.
+
+maintain changelog in `./raster.html` on `riwayat` section.

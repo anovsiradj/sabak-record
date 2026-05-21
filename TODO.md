@@ -1,9 +1,6 @@
 # Raster Todos
 
 - Ekspor galeri sebagai unduh ZIP
-- selection move
-- selection copas
-- selection delete
 
 # Vector Todos
 

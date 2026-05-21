@@ -17,9 +17,14 @@ let hasSelection = false;           // selection finalised
 let selX1 = 0, selY1 = 0;          // bounding box of finalised selection (top-left)
 let selX2 = 0, selY2 = 0;          // bounding box of finalised selection (bottom-right)
 let freeformPath = [];              // [{x,y}] for pen/freeform mode
-let copiedPixels = null;            // ImageData of the copied region
+let copiedPixels = null;            // ImageData of the copied region (for move)
+let clipboardPixels = null;         // ImageData in clipboard (for copas)
+let clipboardShape = null;          // {mode, path, w, h} for non-rect shapes
 let isDraggingMove = false;         // move drag in progress
 let moveOffsetX = 0, moveOffsetY = 0;
+let isDraggingPaste = false;        // paste drag in progress
+let pasteX = 0, pasteY = 0;         // paste position
+let cursorX = 0, cursorY = 0;       // last known cursor position
 
 // ─── Bounding box helper ──────────────────────────────────────────────────────
 
@@ -175,6 +180,32 @@ function renderMovePreview() {
     ctx.restore();
 }
 
+/**
+ * Renders clipboardPixels on the ghost canvas at paste position.
+ */
+function renderPastePreview() {
+    const ctx = getGhostCtx();
+    clearGhost();
+
+    if (!clipboardPixels) return;
+
+    const offscreen = document.createElement("canvas");
+    offscreen.width  = clipboardPixels.width;
+    offscreen.height = clipboardPixels.height;
+    offscreen.getContext("2d").putImageData(clipboardPixels, 0, 0);
+
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.drawImage(offscreen, pasteX, pasteY);
+
+    // Draw dashed border around pasted content
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth   = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeRect(pasteX, pasteY, clipboardPixels.width, clipboardPixels.height);
+    ctx.restore();
+}
+
 // ─── Exported event handlers ──────────────────────────────────────────────────
 
 export function onSelectDown(e) {
@@ -183,6 +214,13 @@ export function onSelectDown(e) {
 
     // "arrow" was removed from selection shapes — fall back to rect
     if (state.selectShapeMode === "arrow") state.selectShapeMode = "rect";
+
+    // Handle paste drag
+    if (isDraggingPaste && clipboardPixels) {
+        anchorX = pos.x - pasteX;
+        anchorY = pos.y - pasteY;
+        return;
+    }
 
     // Guard against double-down during move drag
     if (isDraggingMove) return;
@@ -240,6 +278,18 @@ export function onSelectMove(e) {
     e.preventDefault();
     const pos = getPos(e);
 
+    // Track cursor position
+    cursorX = pos.x;
+    cursorY = pos.y;
+
+    // Handle paste drag
+    if (isDraggingPaste && clipboardPixels) {
+        pasteX = pos.x - anchorX;
+        pasteY = pos.y - anchorY;
+        renderPastePreview();
+        return;
+    }
+
     if (isDraggingMove) {
         moveOffsetX = pos.x - anchorX;
         moveOffsetY = pos.y - anchorY;
@@ -262,6 +312,12 @@ export function onSelectMove(e) {
 export function onSelectUp(e) {
     e.preventDefault();
     const pos = getPos(e);
+
+    // Handle paste drag end - commit on mouseup
+    if (isDraggingPaste && clipboardPixels) {
+        commitPaste();
+        return;
+    }
 
     if (isDraggingMove) {
         isDraggingMove = false;
@@ -411,6 +467,96 @@ export function deleteSelection() {
     isDraggingMove = false;
 }
 
+// ─── Copy & Paste ─────────────────────────────────────────────────────────────
+
+export function copySelection() {
+    if (!hasSelection) return;
+
+    const w = selX2 - selX1;
+    const h = selY2 - selY1;
+
+    // Store clipboard data
+    clipboardPixels = state.sbk.getImageData(selX1, selY1, w, h);
+    clipboardShape  = {
+        mode: state.selectShapeMode,
+        path: state.selectShapeMode === "pen" ? [...freeformPath] : null,
+        w: w,
+        h: h,
+        x1: selX1,
+        y1: selY1,
+        x2: selX2,
+        y2: selY2,
+    };
+}
+
+export function pasteSelection() {
+    if (!clipboardPixels) return;
+
+    // Cancel any existing selection or paste
+    cancelSelection();
+    cancelPaste();
+
+    // Initialize paste position at cursor center
+    // The cursor position should be the center of the pasted content
+    pasteX = Math.floor(cursorX - (clipboardPixels.width / 2));
+    pasteY = Math.floor(cursorY - (clipboardPixels.height / 2));
+
+    isDraggingPaste = true;
+    // Set anchor so cursor is at center of pasted content
+    anchorX = clipboardPixels.width / 2;
+    anchorY = clipboardPixels.height / 2;
+    renderPastePreview();
+}
+
+export function commitPaste() {
+    if (!isDraggingPaste || !clipboardPixels) return;
+
+    const sbk = state.sbk;
+    pushUndo();
+
+    const offscreen = document.createElement("canvas");
+    offscreen.width  = clipboardPixels.width;
+    offscreen.height = clipboardPixels.height;
+    offscreen.getContext("2d").putImageData(clipboardPixels, 0, 0);
+
+    if (clipboardShape && clipboardShape.mode !== "rect") {
+        sbk.save();
+        sbk.globalCompositeOperation = "source-over";
+
+        // Build shape path at paste position
+        if (clipboardShape.mode === "pen" && clipboardShape.path) {
+            sbk.beginPath();
+            const dx = pasteX - clipboardShape.x1;
+            const dy = pasteY - clipboardShape.y1;
+            clipboardShape.path.forEach((pt, i) => {
+                if (i === 0) sbk.moveTo(pt.x + dx, pt.y + dy);
+                else         sbk.lineTo(pt.x + dx, pt.y + dy);
+            });
+            sbk.closePath();
+        } else {
+            const fn = SHAPE_PATH_FNS[clipboardShape.mode];
+            if (fn) {
+                sbk.beginPath();
+                fn(sbk, pasteX, pasteY, pasteX + clipboardPixels.width, pasteY + clipboardPixels.height);
+            }
+        }
+        sbk.clip();
+        sbk.drawImage(offscreen, pasteX, pasteY);
+        sbk.restore();
+    } else {
+        sbk.drawImage(offscreen, pasteX, pasteY);
+    }
+
+    isDraggingPaste = false;
+    clearGhost();
+}
+
+export function cancelPaste() {
+    isDraggingPaste = false;
+    pasteX = pasteY = 0;
+    clearGhost();
+}
+
 export function cancelSelection() {
     hasSelection   = false;
     isSelecting    = false;
@@ -424,17 +570,57 @@ export function cancelSelection() {
     clearGhost();
 }
 
+export function hasClipboard() {
+    return clipboardPixels !== null;
+}
+
 // ─── Initialisation ───────────────────────────────────────────────────────────
 
 export function initSelectTool() {
     $(document).on("keydown", function (e) {
         if (state.tool !== "select") return;
+
+        // Delete selection
         if (e.key === "Delete" || e.key === "Backspace") {
             e.preventDefault();
-            deleteSelection();
-        } else if (e.key === "Escape") {
+            if (isDraggingPaste) {
+                cancelPaste();
+            } else {
+                deleteSelection();
+            }
+            return;
+        }
+
+        // Cancel selection or paste
+        if (e.key === "Escape") {
             e.preventDefault();
-            cancelSelection();
+            if (isDraggingPaste) {
+                cancelPaste();
+            } else {
+                cancelSelection();
+            }
+            return;
+        }
+
+        // Copy: Ctrl+C
+        if (e.ctrlKey && (e.key === "c" || e.key === "C")) {
+            e.preventDefault();
+            copySelection();
+            return;
+        }
+
+        // Paste: Ctrl+V
+        if (e.ctrlKey && (e.key === "v" || e.key === "V")) {
+            e.preventDefault();
+            pasteSelection();
+            return;
+        }
+
+        // Commit paste: Enter
+        if (e.key === "Enter" && isDraggingPaste) {
+            e.preventDefault();
+            commitPaste();
+            return;
         }
     });
 
@@ -443,5 +629,6 @@ export function initSelectTool() {
         $("#select_shape_popover [data-shape]").removeClass("active");
         $(this).addClass("active");
         if (hasSelection || isSelecting) cancelSelection();
+        if (isDraggingPaste) cancelPaste();
     });
 }
